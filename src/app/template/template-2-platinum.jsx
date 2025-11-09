@@ -1048,7 +1048,7 @@ export default function PlatinumTemplate14() {
               >
                 {/* Ornamen background */}
                 <div className="absolute left-0 top-0 w-48 h-48 bg-[url('/asset/platinum/tema-pegunungan/bulan.png')] bg-no-repeat bg-contain opacity-30 animate-pulse"></div>
-                <div className="absolute right-0 bottom-0 w-48 h-48  opacity-30 rotate-180 animate-pulse"></div>
+                <div className="absolute right-0 bottom-0 w-48 h-48 opacity-30 rotate-180 animate-pulse"></div>
 
                 {/* Judul */}
                 <div className="text-center mb-12 px-4">
@@ -1061,6 +1061,52 @@ export default function PlatinumTemplate14() {
                     bahagia 💞
                   </p>
                 </div>
+
+                {/* === SLIDER FOTO ATAS === */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 1, ease: "easeInOut" }}
+                  viewport={{ once: true }}
+                  className="relative w-full max-w-5xl mx-auto mb-16 rounded-3xl overflow-hidden shadow-2xl"
+                >
+                  <div className="relative w-full h-[300px] md:h-[500px] rounded-3xl overflow-hidden">
+                    {/* Auto-slide pakai CSS animation */}
+                    <div className="slider w-full h-full flex animate-slide">
+                      {[
+                        "/images/prewed-1.jpg",
+                        "/images/prewed-2.jpg",
+                        "/images/bg-wedding.jpg",
+                        "/images/bg.jpg",
+                      ].map((src, i) => (
+                        <div key={i} className="min-w-full h-full relative">
+                          <img
+                            src={src}
+                            alt={`Slider ${i + 1}`}
+                            className="object-cover w-full h-full"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/30"></div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Caption elegan */}
+                    <div className="absolute bottom-6 left-0 right-0 text-center text-white drop-shadow-lg">
+                      <motion.h3
+                        key="caption"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="text-2xl md:text-3xl font-semibold"
+                      >
+                        Momen Bahagia Kami 💍
+                      </motion.h3>
+                    </div>
+                  </div>
+
+                  {/* Gradient pinggir */}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-transparent to-transparent"></div>
+                </motion.div>
 
                 {/* Galeri grid */}
                 <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -1112,7 +1158,6 @@ export default function PlatinumTemplate14() {
                       transition={{ duration: 0.4 }}
                       className="rounded-2xl max-h-[85vh] max-w-[90vw] object-contain shadow-2xl"
                     />
-                    {/* Tombol close */}
                     <button
                       onClick={() => setSelectedImage(null)}
                       className="absolute top-8 right-8 text-white text-3xl hover:text-slate-300 transition"
@@ -1122,6 +1167,31 @@ export default function PlatinumTemplate14() {
                   </motion.div>
                 )}
               </motion.section>
+
+              {/* CSS untuk animasi slider */}
+              <style jsx>{`
+                @keyframes slide {
+                  0% {
+                    transform: translateX(0%);
+                  }
+                  25% {
+                    transform: translateX(-100%);
+                  }
+                  50% {
+                    transform: translateX(-200%);
+                  }
+                  75% {
+                    transform: translateX(-300%);
+                  }
+                  100% {
+                    transform: translateX(0%);
+                  }
+                }
+
+                .animate-slide {
+                  animation: slide 20s infinite ease-in-out;
+                }
+              `}</style>
 
               {/* Wedding Gift */}
               <motion.section
