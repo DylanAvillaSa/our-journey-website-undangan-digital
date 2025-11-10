@@ -607,7 +607,7 @@ export default function Template5Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-wanita.png"
+                    src="/foto-dummy/wanita.png"
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
@@ -636,7 +636,7 @@ export default function Template5Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-pria.png"
+                    src="/foto-dummy/pria.png"
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"

@@ -498,27 +498,6 @@ export default function Template4Gold() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="relative py-20 px-6 overflow-hidden"
           >
-            {/* Background Layer */}
-            <div className="absolute inset-0">
-              {/* Gradient halus */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-b from-white via-[${THEMES[theme].cta}] to-[#f5f5f5]`}
-              />
-
-              {/* Pattern floral tipis */}
-              <div
-                className="absolute inset-0 opacity-[0.07]"
-                style={{
-                  backgroundImage: "url('/asset/pattern-floral.png')",
-                  backgroundRepeat: "repeat",
-                  backgroundSize: "300px",
-                }}
-              />
-
-              {/* Overlay cahaya */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-white/60 blur-3xl rounded-full opacity-40" />
-            </div>
-
             {/* Judul Section */}
             <motion.div
               initial={{ opacity: 0, y: -30 }}
@@ -557,7 +536,7 @@ export default function Template4Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-wanita.png"
+                    src="/foto-dummy/wanita.png"
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
@@ -586,7 +565,7 @@ export default function Template4Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-pria.png"
+                    src="/foto-dummy/pria.png"
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"

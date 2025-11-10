@@ -302,13 +302,6 @@ export default function Template3Gold() {
               className={`mx-auto w-44 h-44 flex items-center justify-center rounded-full border-4 ${THEMES[theme].border} relative mb-6`}
             >
               <span className="text-3xl font-bold">A & H</span>
-              {/* kalau mau tambah ornamen daun bisa pake gambar PNG transparan */}
-              {/* <Image
-                src="/images/ornament-daun.png"
-                alt="Ornamen Daun"
-                fill
-                className="object-contain opacity-90 pointer-events-none"
-              /> */}
             </div>
 
             <p className="mb-1 text-base">Kepada Yth.</p>
@@ -394,11 +387,6 @@ export default function Template3Gold() {
                 <span className="font-bold text-lg">19 September 2025</span>
               </motion.div>
             </div>
-
-            {/* Ornament bawah */}
-            <div className="absolute bottom-0 left-0 w-40 md:w-60 opacity-80 pointer-events-none">
-              <img src="/asset/ornament-bawah.png" alt="ornament bawah" />
-            </div>
           </div>
 
           {/* Profile Mempelai */}
@@ -429,7 +417,7 @@ export default function Template3Gold() {
               >
                 <div className="relative w-40 h-40 md:w-48 md:h-48 mb-6">
                   <Image
-                    src="/profil/mempelai-wanita.png"
+                    src="/foto-dummy/wanita.png"
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-md"
@@ -454,7 +442,7 @@ export default function Template3Gold() {
               >
                 <div className="relative w-40 h-40 md:w-48 md:h-48 mb-6">
                   <Image
-                    src="/profil/mempelai-pria.png"
+                    src="/foto-dummy/pria.png"
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-md"

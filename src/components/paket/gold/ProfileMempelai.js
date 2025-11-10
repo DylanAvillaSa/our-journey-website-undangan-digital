@@ -18,52 +18,6 @@ export default function ProfilMempelai({ T, background }) {
         <div className="absolute bottom-10 right-20 w-52 h-52 bg-amber-200/40 rounded-full blur-3xl animate-pulse"></div>
       </div>
 
-      {/* Ornament Kiri */}
-      <motion.div
-        initial={{
-          opacity: 0,
-          scale: 0,
-        }}
-        whileInView={{
-          opacity: 1,
-          scale: 1.5,
-        }}
-        animate={{
-          y: [0, -15, 0],
-          rotate: [0, -2, 2, 0],
-        }}
-        transition={{
-          duration: 2,
-          ease: "easeInOut",
-        }}
-        className="absolute top-[9rem] left-10 z-20 w-24 md:w-48 opacity-90"
-      >
-        <img src="/asset/florar.png" alt="ornament kiri" className="w-full" />
-      </motion.div>
-
-      {/* Ornament Kiri */}
-      <motion.div
-        initial={{
-          opacity: 0,
-          scale: 0,
-        }}
-        whileInView={{
-          opacity: 1,
-          scale: 1.5,
-        }}
-        animate={{
-          y: [0, -15, 0],
-          rotate: [0, -2, 2, 0],
-        }}
-        transition={{
-          duration: 2,
-          ease: "easeInOut",
-        }}
-        className="absolute bottom-[12rem] right-8 z-20 w-20 md:w-48 opacity-90"
-      >
-        <img src="/asset/florar.png" alt="ornament kiri" className="w-full" />
-      </motion.div>
-
       {/* Title */}
       <motion.h3
         initial={{ opacity: 0, scale: 0.9 }}
@@ -99,7 +53,7 @@ export default function ProfilMempelai({ T, background }) {
         >
           <div className="relative w-[200px] h-[200px] mx-auto mb-6">
             <Image
-              src="/profil/mempelai-pria.png"
+              src="/foto-dummy/pria.png"
               alt="Groom"
               fill
               className={`rounded-full object-cover shadow-lg border-4 ${background[T].border} hover:scale-105 transition-transform duration-500`}
@@ -143,7 +97,7 @@ export default function ProfilMempelai({ T, background }) {
         >
           <div className="relative w-[200px] h-[200px] mx-auto mb-6">
             <Image
-              src="/profil/mempelai-wanita.png"
+              src="/foto-dummy/wanita.png"
               alt="Bride"
               fill
               className={`rounded-full object-cover shadow-lg border-4 ${background[T].border} hover:scale-105 transition-transform duration-500`}

@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -30,6 +32,7 @@ const Navbar = () => {
     pathname == "/template/template-9-gold" ||
     pathname == "/template/template-10-gold" ||
     pathname == "/template/template-11-gold" ||
+    pathname == "/template/template-12-gold" ||
     pathname == "/template/template-13-platinum" ||
     pathname == "/template/template-14-platinum" ||
     pathname == "/template/template-15-platinum" ||
@@ -46,7 +49,10 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center h-20">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2"
+          onClick={() => router.push("/")}
+        >
           <Image
             src="/logo/logo-our-journey.png"
             alt="Logo"
@@ -56,35 +62,6 @@ const Navbar = () => {
           />
           <span className="font-bold text-xl text-gray-800">Our Journey</span>
         </div>
-
-        {/* Desktop Menu */}
-        <ul className="hidden md:flex items-center gap-8 text-gray-800 font-semibold">
-          <li>
-            <a href="#hero" className="hover:text-green-500 transition">
-              Home
-            </a>
-          </li>
-          <li>
-            <a href="#fitur" className="hover:text-green-500 transition">
-              Fitur
-            </a>
-          </li>
-          <li>
-            <a href="#galeri" className="hover:text-green-500 transition">
-              Template
-            </a>
-          </li>
-          <li>
-            <a href="#paket" className="hover:text-green-500 transition">
-              Paket
-            </a>
-          </li>
-          <li>
-            <a href="#wa" className="hover:text-green-500 transition">
-              Pesan WA
-            </a>
-          </li>
-        </ul>
 
         {/* CTA Button */}
         <div className="hidden md:block">

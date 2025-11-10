@@ -13,12 +13,14 @@ const allTemplates = {
     src: `/template/template-${i}.png`,
     link: `/template/template-${i}-silver`,
   })),
-  Gold: [4, 5, 6, 8, 9, 10, 11].map((i, idx) => ({
+  Gold: [4, 5, 6, 8, 9, 10, 7, 12].map((i, idx) => ({
     id: i,
-    name: `Gold ${idx + 1}`,
+    name: `Gold ${idx + 1}`, // buat tampilan aja
     src: `/template/template-${i}.png`,
-    link: `/template/template-${i}-gold`,
+    link:
+      i === 7 ? "/template/template-11-gold" : `/template/template-${i}-gold`,
   })),
+
   Platinum: [13, 14, 15, 16].map((i, idx) => ({
     id: i,
     name: `Platinum ${idx + 1}`,

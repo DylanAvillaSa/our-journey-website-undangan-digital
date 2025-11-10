@@ -296,7 +296,7 @@ export default function Template1Gold() {
           {/* Background Image + Overlay */}
           <div className="absolute inset-0">
             <Image
-              src="/images/wedding.jpeg" // ganti dengan gambar elegan lo
+              src="/images/tmp.jpg" // ganti dengan gambar elegan lo
               alt="Background Wedding"
               fill
               className="object-cover w-full min-h-screen"
@@ -325,7 +325,7 @@ export default function Template1Gold() {
               className={`relative w-44 h-44 mx-auto mb-6 rounded-full border-4 ${THEMES[theme].border} shadow-2xl overflow-hidden`}
             >
               <Image
-                src="/images/anime-wedding.jpg"
+                src="/foto-dummy/latar.jpg"
                 alt="Pasangan"
                 fill
                 className="object-cover"

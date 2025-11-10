@@ -15,6 +15,7 @@ const Footer = () => {
     pathname == "/template/template-9-gold" ||
     pathname == "/template/template-10-gold" ||
     pathname == "/template/template-11-gold" ||
+    pathname == "/template/template-12-gold" ||
     pathname == "/template/template-13-platinum" ||
     pathname == "/template/template-14-platinum" ||
     pathname == "/template/template-15-platinum" ||

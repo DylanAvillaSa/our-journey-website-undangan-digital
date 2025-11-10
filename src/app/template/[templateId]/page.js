@@ -15,6 +15,7 @@ import Template12Gold from "@/app/template/template-1-platinum";
 import Template13Gold from "@/app/template/template-2-platinum";
 import Template14Gold from "@/app/template/template-3-platinum";
 import Template15Gold from "@/app/template/template-4-platinum";
+import Template16Gold from "@/app/template/template-8-gold";
 
 const templatesMap = {
   "template-1-silver": Template1Silver,
@@ -31,6 +32,7 @@ const templatesMap = {
   "template-14-platinum": Template13Gold,
   "template-15-platinum": Template14Gold,
   "template-16-platinum": Template15Gold,
+  "template-12-gold": Template16Gold,
 };
 
 export default function TemplatePage() {

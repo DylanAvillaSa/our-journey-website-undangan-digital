@@ -1,26 +1,47 @@
 "use client";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 export default function Gallery4({ background, theme }) {
-  const photos = [
+  const sliderPhotos = [
     "/images/prewed-1.jpg",
     "/images/prewed-2.jpg",
     "/images/tmp.jpg",
     "/images/bg-wedding.jpg",
-    "/images/wedding-3.jpg",
   ];
+
+  const galleryPhotos = [
+    "/images/prewed-1.jpg",
+    "/images/prewed-2.jpg",
+    "/images/tmp.jpg",
+    "/images/bg-wedding.jpg",
+    "/images/bg.jpg",
+  ];
+
+  const [current, setCurrent] = useState(0);
+  const [zoom, setZoom] = useState(false);
+
+  // Auto ganti slide setiap 4 detik
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % sliderPhotos.length);
+    }, 4000);
+    return () => clearInterval(slideInterval);
+  }, []);
+
+  // Auto zoom in/out setiap 2 detik
+  useEffect(() => {
+    const zoomInterval = setInterval(() => {
+      setZoom((prev) => !prev);
+    }, 2000);
+    return () => clearInterval(zoomInterval);
+  }, []);
 
   return (
     <section className="py-20 px-6 bg-white relative">
       {/* Title */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-        viewport={{ once: true }}
-        className="text-center mb-14"
-      >
+      <div className="text-center mb-14">
         <p
           className={`${background[theme].textMain} font-[GreatVibes] text-xl`}
         >
@@ -29,30 +50,32 @@ export default function Gallery4({ background, theme }) {
         <h2 className="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">
           GALLERY
         </h2>
-      </motion.div>
+      </div>
 
-      {/* Video Highlight */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        viewport={{ once: true }}
-        className="mb-16 overflow-hidden rounded-3xl shadow-lg relative group max-w-4xl mx-auto"
-      >
-        <video
-          controls
-          className="w-full h-[240px] md:h-[420px] object-cover"
-          poster="/gallery/cover.jpg"
-        >
-          <source src="/gallery/video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition duration-500"></div>
-      </motion.div>
+      {/* Slider Highlight */}
+      <div className="relative mb-16 overflow-hidden rounded-3xl shadow-lg max-w-4xl mx-auto h-96">
+        <AnimatePresence>
+          <motion.div
+            key={current}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, scale: zoom ? 1.05 : 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={sliderPhotos[current]}
+              alt={`Slider ${current + 1}`}
+              fill
+              className="object-cover rounded-3xl"
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       {/* Masonry Style Gallery */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-        {photos.map((src, idx) => (
+        {galleryPhotos.map((src, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, scale: 0.9 }}

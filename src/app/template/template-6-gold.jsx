@@ -479,16 +479,6 @@ export default function Template6Gold() {
             <div className="absolute inset-0">
               {/* Overlay transparan biar teks kebaca */}
               <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
-
-              {/* Pattern floral tipis */}
-              <div
-                className="absolute inset-0 opacity-[0.05]"
-                style={{
-                  backgroundImage: "url('/asset/pattern-floral.png')",
-                  backgroundRepeat: "repeat",
-                  backgroundSize: "300px",
-                }}
-              />
             </div>
 
             {/* Judul Section */}
@@ -529,7 +519,7 @@ export default function Template6Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-wanita.png"
+                    src="/foto-dummy/wanita.png"
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
@@ -558,7 +548,7 @@ export default function Template6Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/profil/mempelai-pria.png"
+                    src="/foto-dummy/pria.png"
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
@@ -648,7 +638,7 @@ export default function Template6Gold() {
                   year: "2025",
                   title: "Wedding Day",
                   desc: "Hari spesial di mana kami berjanji sehidup semati.",
-                  img: "/images/wedding-3.jpg",
+                  img: "/images/bg.jpg",
                 },
               ].map((item, idx) => (
                 <motion.div

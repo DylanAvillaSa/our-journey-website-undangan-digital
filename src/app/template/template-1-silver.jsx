@@ -27,6 +27,7 @@ const messages = [
 
 export default function Template1Silver() {
   const rsvpRef = useRef(null);
+  const [dataMempelai, setDataMempelai] = useState(null);
   const [kehadiran, setKehadiran] = useState("");
   const [formDataTamu, setFormDataTamu] = useState({
     nama_tamu_undangan: "",
@@ -37,6 +38,16 @@ export default function Template1Silver() {
   const handleOpen = () => {
     setOpened(true);
   };
+
+  useEffect(() => {
+    const getData = async () => {
+      const res = await fetch("/data/data.json");
+      const data = await res.json();
+      setDataMempelai(data.find((d) => d.template === "Silver"));
+    };
+
+    getData();
+  }, []);
 
   useEffect(() => {
     if (opened && rsvpRef.current) {
@@ -66,36 +77,6 @@ export default function Template1Silver() {
       className="min-h-screen flex flex-col items-center justify-center text-center bg-[#F9F5F2] text-[#6F4E37] relative overflow-hidden scroll-smooth"
       style={{ fontFamily: "'Playfair Display', serif" }}
     >
-      {/* Background Flowers */}
-      <Image
-        src="/asset/bunga-coklat-1.png"
-        alt="flower deco"
-        width={120}
-        height={120}
-        className="absolute top-0 left-0 w-40 md:w-60 rotate-[-20deg]"
-      />
-      <Image
-        src="/asset/bunga-2.png"
-        alt="flower deco"
-        width={200}
-        height={200}
-        className="absolute top-0 right-0 w-40 md:w-60 rotate-[20deg]"
-      />
-      <Image
-        src="/asset/bunga-2.png"
-        alt="flower deco"
-        width={120}
-        height={120}
-        className="absolute bottom-0 left-0 w-40 md:w-60 rotate-[20deg]"
-      />
-      <Image
-        src="/asset/bunga-1.png"
-        alt="flower deco"
-        width={120}
-        height={120}
-        className="absolute bottom-0 right-0 w-40 md:w-60 rotate-[-20deg]"
-      />
-
       {/* Welcome Screen */}
       {!opened && (
         <motion.div
@@ -109,7 +90,7 @@ export default function Template1Silver() {
           <p className="text-sm mb-4">We Invite You To</p>
           <div className="rounded-full overflow-hidden border-4 border-[#D3BAA2] w-40 h-40 mx-auto mb-4">
             <Image
-              src="/images/tmp.jpg"
+              src="/foto-dummy/pembuka.jpg"
               width={160}
               height={160}
               className="h-full object-cover"
@@ -117,7 +98,8 @@ export default function Template1Silver() {
             />
           </div>
           <h1 className="text-3xl font-bold mb-2 text-[#A47148]">
-            Vidi & Riffany
+            {dataMempelai?.nama_mempelai_pria} &{" "}
+            {dataMempelai?.nama_mempelai_wanita}
           </h1>
           <p className="text-sm text-[#7B5E57]">
             Tanpa Mengurangi Rasa Hormat, Kami Mengundang Bapak/Ibu/Saudara/i
@@ -161,7 +143,7 @@ export default function Template1Silver() {
 
           {/* Gambar mempelai */}
           <Image
-            src="/images/tmp.jpg"
+            src="/foto-dummy/pembuka.jpg"
             width={160}
             height={160}
             alt="Foto Mempelai"
@@ -170,7 +152,8 @@ export default function Template1Silver() {
 
           {/* Nama mempelai */}
           <h2 className="mt-4 text-3xl font-cursive text-[#A47148]">
-            The Wedding of Vidi & Riffany
+            The Wedding of {dataMempelai?.nama_mempelai_pria} &{" "}
+            {dataMempelai?.nama_mempelai_wanita}
           </h2>
 
           {/* Ucapan Terima Kasih */}
@@ -221,21 +204,16 @@ export default function Template1Silver() {
               <div className="relative mt-6">
                 <div className="rounded-full border-4 border-[#e2d6cd] w-52 h-52 mx-auto overflow-hidden">
                   <img
-                    src="/images/pria.avif"
+                    src="/foto-dummy/pria.png"
                     alt="Groom"
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <img
-                  src="/asset/ornament-bottom.png"
-                  alt="Decor"
-                  className="absolute bottom-0 right-0 w-[100px] h-[100px] object-cover transform translate-x-1/2 translate-y-1/2"
-                />
               </div>
 
               {/* Nama dan keterangan */}
               <h2 className="text-[#826259] text-2xl font-semibold mt-6">
-                Vidi
+                {dataMempelai?.nama_mempelai_pria}
               </h2>
               <p className="text-[#4d4139] text-sm mt-2">
                 Anak Pertama dari Pasangan <br />
@@ -260,26 +238,21 @@ export default function Template1Silver() {
               <div className="relative mt-6">
                 <div className="rounded-full border-4 border-[#e2d6cd] w-52 h-52 mx-auto overflow-hidden">
                   <img
-                    src="/images/wanita.jpg"
+                    src="/foto-dummy/wanita.png"
                     alt="Groom"
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <img
-                  src="/asset/ornament-bottom.png"
-                  alt="Decor"
-                  className="absolute bottom-0 right-0 w-[100px] h-[100px] object-cover transform translate-x-1/2 translate-y-1/2"
-                />
               </div>
 
               {/* Nama dan keterangan */}
               <h2 className="text-[#826259] text-2xl font-semibold mt-6">
-                Riffany
+                {dataMempelai?.nama_mempelai_wanita}
               </h2>
               <p className="text-[#4d4139] text-sm mt-2">
                 Anak Kedua dari Pasangan <br />
-                Bapak Si pria & <br />
-                Ibu Si pria <br />
+                Bapak Si Wanita & <br />
+                Ibu Si Wanita <br />
                 Beralamat di Alamat rumah si pria
               </p>
             </section>
@@ -292,7 +265,7 @@ export default function Template1Silver() {
               {/* Foto */}
               <div className="relative w-full h-80 md:h-96">
                 <Image
-                  src="/images/pengantin.avif"
+                  src="/foto-dummy/latar.jpg"
                   alt="family"
                   fill
                   className="object-cover rounded-xl"
@@ -308,14 +281,7 @@ export default function Template1Silver() {
 
             {/* Card Info */}
             <div className="relative w-[90%] max-w-md -mt-12 z-40">
-              <div
-                className="bg-white/95 backdrop-blur-md rounded-3xl px-6 py-6 border-[3px] border-dashed border-[#F0C84C] shadow-[0_25px_40px_rgba(0,0,0,0.25)]"
-                style={{
-                  backgroundImage: 'url("/images/marble-texture.png")',
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
+              <div className="bg-white/95 backdrop-blur-md rounded-3xl px-6 py-6 border-[3px] border-dashed border-[#F0C84C] shadow-[0_25px_40px_rgba(0,0,0,0.25)]">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-900">
                   Jumat, 15 Agustus 2025
                 </h3>
@@ -329,6 +295,94 @@ export default function Template1Silver() {
             </div>
           </section>
 
+          {/* Lokasi Akad & Resepsi */}
+          <section className="mt-16">
+            <h2 className="text-3xl font-[GreatVibes] text-[#A47148] mb-6">
+              Lokasi Akad & Resepsi
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Akad */}
+              <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-[#E6D3B1]">
+                <h3 className="text-xl font-semibold text-[#6F4E37] mb-2">
+                  Akad Nikah
+                </h3>
+                <p className="text-sm text-gray-700">
+                  Jumat, 15 Agustus 2025 <br />
+                  Pukul 08:00 WIB <br />
+                  Masjid Al-Ikhlas, Jl. Melati No. 45, Bandung
+                </p>
+                <a
+                  href="https://maps.google.com?q=Masjid+Al+Ikhlas+Bandung"
+                  target="_blank"
+                  className="inline-block mt-3 text-sm text-white bg-[#A47148] px-4 py-2 rounded-full hover:bg-[#8c5f3b] transition"
+                >
+                  Lihat Lokasi
+                </a>
+              </div>
+
+              {/* Resepsi */}
+              <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-[#E6D3B1]">
+                <h3 className="text-xl font-semibold text-[#6F4E37] mb-2">
+                  Resepsi
+                </h3>
+                <p className="text-sm text-gray-700">
+                  Jumat, 15 Agustus 2025 <br />
+                  Pukul 13:30 - 20:00 WIB <br />
+                  Gedung Serba Guna Cempaka, Bandung
+                </p>
+                <a
+                  href="https://maps.google.com?q=Gedung+Serba+Guna+Cempaka+Bandung"
+                  target="_blank"
+                  className="inline-block mt-3 text-sm text-white bg-[#A47148] px-4 py-2 rounded-full hover:bg-[#8c5f3b] transition"
+                >
+                  Lihat Lokasi
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* Amplop Digital */}
+          <section className="mt-20 bg-[#F6EFEA] py-10 px-6 rounded-2xl border border-[#E6D3B1] max-w-3xl mx-auto">
+            <h2 className="text-3xl font-[GreatVibes] text-[#A47148] mb-6">
+              Amplop Digital
+            </h2>
+            <p className="text-sm text-gray-700 max-w-md mx-auto mb-4">
+              Bagi keluarga dan sahabat yang ingin mengirimkan hadiah, kami
+              menyediakan amplop digital sebagai ungkapan kasih.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 mt-4">
+              <div className="bg-white rounded-xl border border-[#E6D3B1] shadow-md p-4">
+                <h3 className="font-semibold text-[#6F4E37]">BCA</h3>
+                <p className="text-sm">No. Rekening: 1234567890</p>
+                <p className="text-sm text-gray-600">
+                  a.n. {dataMempelai?.nama_mempelai_pria}
+                </p>
+                <button
+                  className="mt-3 px-4 py-2 text-sm bg-[#A47148] text-white rounded-full hover:bg-[#8c5f3b]"
+                  onClick={() => navigator.clipboard.writeText("1234567890")}
+                >
+                  Salin Nomor
+                </button>
+              </div>
+
+              <div className="bg-white rounded-xl border border-[#E6D3B1] shadow-md p-4">
+                <h3 className="font-semibold text-[#6F4E37]">BNI</h3>
+                <p className="text-sm">No. Rekening: 9876543210</p>
+                <p className="text-sm text-gray-600">
+                  a.n. {dataMempelai?.nama_mempelai_wanita}
+                </p>
+                <button
+                  className="mt-3 px-4 py-2 text-sm bg-[#A47148] text-white rounded-full hover:bg-[#8c5f3b]"
+                  onClick={() => navigator.clipboard.writeText("9876543210")}
+                >
+                  Salin Nomor
+                </button>
+              </div>
+            </div>
+          </section>
+
           {/* ucapan terimakasih */}
           <section className="mt-16">
             <p>
@@ -337,22 +391,6 @@ export default function Template1Silver() {
               restu. Atas kehadiran dan doa restunya, kami mengucapkan terima
               kasih.
             </p>
-          </section>
-
-          {/* gallery pernikahan */}
-          <section className="bg-[#A47148] mt-16 rounded-md p-3 flex flex-col gap-5 text-white">
-            <h1>Our Gallery</h1>
-
-            {["/images/galeri-1.png", "/images/galeri-2.png"].map(
-              (galeri, index) => (
-                <div
-                  key={index}
-                  className="border-dotted border-2 border-[#F0C84C] rounded"
-                >
-                  <img src={galeri} className="bg-amber-900" />
-                </div>
-              )
-            )}
           </section>
 
           {/* form rsvp */}

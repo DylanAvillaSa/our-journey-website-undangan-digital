@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Image from "next/image";
 
-const FormWa = () => {
+const FormWa = ({ paket }) => {
   // Form WA
-  const [name, setName] = useState("");
+  const [name, setName] = useState(paket?.name);
   const [partnerName, setPartnerName] = useState("");
   const [paketOrder, setPaketOrder] = useState("Silver");
 
@@ -24,14 +24,15 @@ const FormWa = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 flex flex-col gap-6"
-      >    {/* Title */}
+      >
+        {" "}
+        {/* Title */}
         <h2 className="text-2xl font-extrabold text-center text-gray-800">
           Pesan Undangan Digital
         </h2>
         <p className="text-center text-gray-600">
           Isi form di bawah, kami akan menghubungi Anda via WhatsApp.
         </p>
-
         {/* Form Inputs */}
         <div className="flex flex-col gap-4">
           <input
@@ -58,7 +59,6 @@ const FormWa = () => {
             <option value="Platinum">Platinum</option>
           </select>
         </div>
-
         {/* Submit Button */}
         <motion.button
           whileHover={{ scale: 1.05 }}
