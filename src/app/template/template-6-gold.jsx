@@ -10,6 +10,8 @@ import {
 import { CalendarDays } from "lucide-react";
 import { PlayCircle, PauseCircle, Heart, Mail, Flower2 } from "lucide-react";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import Image from "next/image";
 import TheDate from "@/components/paket/gold/CountdownVersi2";
 import Parallax from "@/components/animation/Parallax";
@@ -88,7 +90,7 @@ const itemVariants = {
   exit: { opacity: 0, scale: 0.5, y: 10 },
 };
 
-export default function Template6Gold() {
+export default function Template6Gold({ id, data }) {
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
   const Ref = useRef(null);
@@ -111,6 +113,7 @@ export default function Template6Gold() {
       return initialMessages;
     }
   });
+  const [dataMempelai, setDataMempelai] = useState(data || null);
 
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -135,8 +138,33 @@ export default function Template6Gold() {
     if (ref.current) setTarget(ref.current);
   }, []);
 
-  const yBird = useTransform(scrollYProgress, [0, 1], [0, 50]); // burung gerak turun
-  const yText = useTransform(scrollYProgress, [0, 1], [0, 30]);
+  // mengambil data di database
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Gold 6"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna);
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleOpen = () => setOpened(true);
 
@@ -208,7 +236,9 @@ export default function Template6Gold() {
     const end = formatForGoogle(endDate);
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      "Vidi & Riffany Wedding"
+      `${dataMempelai?.panggilanPria || "Putra"} & ${
+        dataMempelai?.panggilanWanita || "Putri"
+      } Wedding`
     )}&dates=${start}/${end}&details=${encodeURIComponent(
       "Acara pernikahan kami"
     )}&location=${encodeURIComponent("Masjid Al-Falah, Jakarta Selatan")}`;
@@ -216,7 +246,7 @@ export default function Template6Gold() {
     window.open(url, "_blank");
   };
 
-  const images = [
+  const images = dataMempelai?.gallery || [
     "/images/tmp.jpg",
     "/images/prewed-1.jpg",
     "/images/wedding-3.jpg",
@@ -250,7 +280,7 @@ export default function Template6Gold() {
         ref={audioRef}
         autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -276,17 +306,19 @@ export default function Template6Gold() {
       </div>
 
       {/* ===== Switcher (tengah bawah) ===== */}
-      <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
-        <div
-          className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
+      {!dataMempelai?.temaWarna && (
+        <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
+          <div
+            className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
       text-white flex items-center justify-center ${
         switcher ? "hidden" : "opacity-35"
       } group`}
-          onClick={() => setSwitcher(!switcher)}
-        >
-          Theme
+            onClick={() => setSwitcher(!switcher)}
+          >
+            Theme
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {switcher && (
@@ -340,7 +372,7 @@ export default function Template6Gold() {
         >
           {/* Background */}
           <Image
-            src="/images/bg-wedding.jpg" // ganti sama foto pasangan lu
+            src={dataMempelai?.gallery[0] || "/images/bg-wedding.jpg"} // ganti sama foto pasangan lu
             alt="Pasangan"
             fill
             priority
@@ -362,7 +394,8 @@ export default function Template6Gold() {
 
             {/* Nama pasangan */}
             <h1 className="font-[var(--font-vibes)] text-5xl md:text-6xl text-white mb-8">
-              Putra & Putri
+              {dataMempelai?.panggilanPria || "Putra"} &{" "}
+              {dataMempelai?.panggilanWanita || "Putri"}
             </h1>
 
             {/* Sapaan tamu */}
@@ -393,7 +426,11 @@ export default function Template6Gold() {
       {opened && (
         <div className="relative z-10 pb-24">
           <div className="w-full">
-            <Parallax currentImage={currentImage} images={images} />
+            <Parallax
+              currentImage={currentImage}
+              images={images}
+              datamempelai={dataMempelai}
+            />
 
             {/* Section We Found Love */}
             <motion.section
@@ -406,7 +443,7 @@ export default function Template6Gold() {
               {/* Background image */}
               <div className="absolute inset-0">
                 <img
-                  src="/images/prewed-1.jpg" // ganti dengan gambar lo
+                  src={dataMempelai?.gallery[1] || "/images/prewed-1.jpg"} // ganti dengan gambar lo
                   alt="Background Love"
                   className="w-full h-full object-cover"
                 />
@@ -519,17 +556,21 @@ export default function Template6Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/wanita.png"
+                    src={
+                      dataMempelai?.fotoMempelaiWanita ||
+                      "/foto-dummy/wanita.png"
+                    }
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Anissa Putri
+                  {dataMempelai?.namaLengkapWanita || "Putri Anjani"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putri dari Bapak Ahmad & Ibu Siti
+                  Putri dari Bapak {dataMempelai?.ayahMempelaiWanita || "Ahmad"}{" "}
+                  & Ibu {dataMempelai?.ibuMempelaiWanita || "Siti"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang wanita penyayang, penuh perhatian, dan selalu ceria
@@ -548,17 +589,20 @@ export default function Template6Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/pria.png"
+                    src={
+                      dataMempelai?.fotoMempelaiPria || "/foto-dummy/pria.png"
+                    }
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Vidi Lukman
+                  {dataMempelai?.namaLengkapPria || "Putra Perkasa"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putra dari Bapak Yusuf & Ibu Aminah
+                  Putra dari Bapak {dataMempelai?.ayahMempelaiPria || "Yusuf"} &
+                  Ibu {dataMempelai?.ibuMempelaiPria || "Aminah"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang pria sederhana, penuh tanggung jawab, dan sabar yang
@@ -615,83 +659,137 @@ export default function Template6Gold() {
               ></div>
 
               {/* Items */}
-              {[
-                {
-                  year: "2019",
-                  title: "First Met",
-                  desc: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
-                  img: "/images/prewed-1.jpg",
-                },
-                {
-                  year: "2020",
-                  title: "First Date",
-                  desc: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
-                  img: "/images/prewed-2.jpg",
-                },
-                {
-                  year: "2022",
-                  title: "Engagement",
-                  desc: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
-                  img: "/images/wedding-2.jpg",
-                },
-                {
-                  year: "2025",
-                  title: "Wedding Day",
-                  desc: "Hari spesial di mana kami berjanji sehidup semati.",
-                  img: "/images/bg.jpg",
-                },
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  className={`mb-16 flex items-center w-full ${
-                    idx % 2 === 0 ? "justify-start" : "justify-end"
-                  }`}
-                  initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: 1,
-                    ease: "easeOut",
-                    delay: idx * 0.2,
-                  }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  {/* Card */}
-                  <div
-                    className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6 flex flex-col items-center text-center`}
-                  >
-                    {/* Foto Pasangan */}
-                    <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden shadow-md border-4 border-pink-200">
-                      <img
-                        src={item.img}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
 
-                    {/* Icon Dot */}
-                    <div
-                      className={`absolute top-6 ${
-                        idx % 2 === 0 ? "-right-8" : "-left-8"
-                      } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
-                        THEMES[theme].cta
+              {dataMempelai?.loveStory.length > 0
+                ? dataMempelai?.loveStory.map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
                       }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      <i className="fa-solid fa-heart text-white"></i>
-                    </div>
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6 flex flex-col items-center text-center`}
+                      >
+                        {/* Foto Pasangan */}
+                        <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden shadow-md border-4 border-pink-200">
+                          <img
+                            src={dataMempelai?.gallery[idx]}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
 
-                    {/* Isi Card */}
-                    <p className="text-sm text-gray-400">{item.year}</p>
-                    <h3
-                      className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
+
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.year}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))
+                : [
+                    {
+                      when: "2019",
+                      title: "First Met",
+                      text: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
+                      img: dataMempelai?.gallery[0] || "/images/prewed-1.jpg",
+                    },
+                    {
+                      when: "2020",
+                      title: "First Date",
+                      text: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
+                      img: dataMempelai?.gallery[1] || "/images/prewed-1.jpg",
+                    },
+                    {
+                      when: "2022",
+                      title: "Engagement",
+                      text: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
+                      img: dataMempelai?.gallery[2] || "/images/wedding-2.jpg",
+                    },
+                    {
+                      when: "2025",
+                      title: "Wedding Day",
+                      text: "Hari spesial di mana kami berjanji sehidup semati.",
+                      img: dataMempelai?.gallery[3] || "/images/bg.jpg",
+                    },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
+                      }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm md:text-base">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6 flex flex-col items-center text-center`}
+                      >
+                        {/* Foto Pasangan */}
+                        <div className="relative w-28 h-28 mb-4 rounded-full overflow-hidden shadow-md border-4 border-pink-200">
+                          <img
+                            src={item.img}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
+
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.year}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
             </div>
 
             {/* Ornamen Dekorasi */}
@@ -717,7 +815,11 @@ export default function Template6Gold() {
 
           {/* Countdown & Acara */}
           <section className="relative py-16 px-6 max-w-4xl mx-auto">
-            <TheDate background={THEMES} theme={theme} />
+            <TheDate
+              background={THEMES}
+              theme={theme}
+              datamempelai={dataMempelai}
+            />
 
             {/* Grid Card */}
             <div className="grid md:grid-cols-2 gap-8 mt-10">
@@ -727,9 +829,10 @@ export default function Template6Gold() {
                   day: "Selasa",
                   date: "14",
                   month: "Mei 2025",
-                  time: "Pukul 09.00 WIB - Selesai",
-                  place: "Mesjid Baiturrahman",
+                  time: dataMempelai?.jamAkad || "Pukul 09.00 WIB - Selesai",
+                  place: dataMempelai?.lokasiAkad || "Mesjid Baiturrahman",
                   address:
+                    dataMempelai?.alamatAkad ||
                     "Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul, Yogyakarta",
                 },
                 {
@@ -737,8 +840,8 @@ export default function Template6Gold() {
                   day: "Selasa",
                   date: "14",
                   month: "Mei 2025",
-                  time: "Pukul 19.00 WIB - Selesai",
-                  place: "Mesjid Baiturrahman",
+                  time: dataMempelai?.jamResepsi || "Pukul 09.00 WIB - Selesai",
+                  place: dataMempelai?.lokasiResepsi || "Mesjid Baiturrahman",
                   address:
                     "Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul, Yogyakarta",
                 },
@@ -834,7 +937,10 @@ export default function Template6Gold() {
               >
                 <h4 className="font-semibold mb-2">Peta Lokasi</h4>
                 <iframe
-                  src="https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  src={
+                    dataMempelai?.linkMaps ||
+                    "https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  }
                   width="100%"
                   height="200"
                   className="border-0 rounded-md"
@@ -845,7 +951,11 @@ export default function Template6Gold() {
           </motion.section>
 
           {/* Gallery */}
-          <Gallery4 background={THEMES} theme={theme} />
+          <Gallery4
+            background={THEMES}
+            theme={theme}
+            datamempelai={dataMempelai}
+          />
 
           {/* Ucapan & Doa + Guest Book form */}
           <section
@@ -966,7 +1076,11 @@ export default function Template6Gold() {
             transition={{ duration: 0.6 }}
             className="py-10 px-4"
           >
-            <AmplopGift background={THEMES} T={theme} />
+            <AmplopGift
+              background={THEMES}
+              T={theme}
+              datamempelai={dataMempelai}
+            />
           </motion.section>
 
           {/* Footer */}
@@ -996,12 +1110,17 @@ export default function Template6Gold() {
                 className="text-pink-500 animate-pulse"
                 fill="currentColor"
               />
-              <span>Vidi & Tijani</span>
+              <span>
+                {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                {dataMempelai?.panggilanWanita || "Putri"}
+              </span>
             </div>
 
             {/* Small copyright */}
             <p className="mt-4 text-xs text-gray-400">
-              © {new Date().getFullYear()} Vidi & Tijani Wedding
+              © {new Date().getFullYear()}{" "}
+              {dataMempelai?.panggilanPria || "Putra"} &{" "}
+              {dataMempelai?.panggilanWanita || "Putri"} Wedding
             </p>
           </motion.footer>
         </div>

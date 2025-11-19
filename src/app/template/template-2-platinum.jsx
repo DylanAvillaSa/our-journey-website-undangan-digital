@@ -3,12 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
+import { collection, query, where, getDocs, getDoc } from "firebase/firestore";
+import { db } from "@/libs/config";
 import Image from "next/image";
 import { MapPin, Mail, Instagram } from "lucide-react";
 import TheDate from "@/components/paket/gold/CountdownVersi2";
 import { CalendarDays } from "lucide-react";
 import Gallery3 from "@/components/paket/gold/GallerySectionVersi3";
 import { fonts } from "@/app/layout";
+import BottomNavigation from "@/components/ui/BottomNavigation";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const dummyData = [
@@ -69,32 +73,13 @@ export const THEMES = {
   },
 };
 
-const containerVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.4,
-      staggerChildren: 0.1,
-      ease: "easeOut",
-    },
-  },
-  exit: { opacity: 0, y: 20, scale: 0.8, transition: { duration: 0.3 } },
-};
-
-// Variants untuk tiap tombol
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.5, y: 10 },
-  visible: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.5, y: 10 },
-};
-
-export default function PlatinumTemplate14() {
+export default function PlatinumTemplate14({ id, data: datas }) {
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const [switcher, setSwitcher] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(datas || null);
   const [opened, setOpened] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("sunset");
@@ -120,7 +105,6 @@ export default function PlatinumTemplate14() {
   });
 
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
-
   const videoRef = useRef(null);
   const videoRef2 = useRef(null);
   const [showBackgroundVideo, setShowBackgroundVideo] = useState(false);
@@ -128,16 +112,43 @@ export default function PlatinumTemplate14() {
   const rekeningList = [
     {
       id: 1,
-      bank: "BCA",
-      nomor: "1234567890",
-      nama: "Dylan Avilla",
+      bank: dataMempelai?.jenisRekening || "BCA",
+      nomor: dataMempelai?.nomorRekening || "08689213",
+      nama: dataMempelai?.namaLengkapPria || "Putra",
       logo: "/asset/platinum/tema-merak/bca.png",
     },
   ];
-
-  const TARGET_DATE = new Date("2025-12-21T10:00:00");
+  const combined = `${dataMempelai?.countdownDate}T${dataMempelai?.countdownTime}`;
+  const TARGET_DATE = new Date(combined || "2025-12-21T10:00:00");
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(TARGET_DATE));
   const [finished, setFinished] = useState(false);
+
+  // mengambil data dari database
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Platinum 2"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna || "sunset");
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -302,6 +313,13 @@ export default function PlatinumTemplate14() {
     return () => clearInterval(timer);
   }, [images.length]);
 
+  const scrollToSection = (id) => {
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <main
       className={`min-h-screen ${T.pageBg} relative overflow-hidden`}
@@ -312,7 +330,7 @@ export default function PlatinumTemplate14() {
         ref={audioRef}
         // autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -371,7 +389,8 @@ export default function PlatinumTemplate14() {
                 transition={{ delay: 0.6 }}
                 className="font-[var(--font-vibes)] text-6xl md:text-7xl text-white drop-shadow-lg mb-3"
               >
-                Putra & Putri
+                {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                {dataMempelai?.panggilanWanita || "Putri"}
               </motion.h1>
 
               <motion.p
@@ -380,7 +399,7 @@ export default function PlatinumTemplate14() {
                 transition={{ delay: 0.9 }}
                 className="text-white text-lg md:text-xl mb-8 font-[var(--font-playfair)]"
               >
-                12.12.2023
+                {dataMempelai?.tanggalAkad || "12.12.2023"}
               </motion.p>
 
               {/* 💌 Nama Tamu */}
@@ -393,7 +412,7 @@ export default function PlatinumTemplate14() {
                   Kepada Yth:
                 </p>
                 <p className="text-2xl font-semibold text-pink-600 bg-white/90 rounded-xl w-[230px] mx-auto py-1 shadow-md">
-                  Nama Tamu
+                  {namaTamu || "Nama Tamu"}
                 </p>
                 <p className="text-white text-sm md:text-base mt-2">
                   Di Tempat
@@ -503,9 +522,9 @@ export default function PlatinumTemplate14() {
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 2, duration: 1 }}
                     >
-                      <p>Vidi</p>
+                      <p>{dataMempelai?.panggilanPria || "Putra"}</p>
                       <span>&</span>
-                      <p>Riffany</p>
+                      <p>{dataMempelai?.panggilanWanita || "Putri"}</p>
                     </motion.div>
                   </motion.div>
                 </motion.div>
@@ -516,6 +535,8 @@ export default function PlatinumTemplate14() {
           {/* ======== Bagian Konten yang Bisa di Scroll ======== */}
           {showBackgroundVideo && (
             <div className="relative z-10 flex flex-col items-center justify-center text-center text-gray-800 mt-[100vh] mx-3">
+              <BottomNavigation onNavigate={scrollToSection} />
+
               {/* ===== Pembukaan Surah Ar-Rum ===== */}
               <section className="relative rounded-t-full py-24 px-6 md:px-16 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-800">
                 {/* Ornamen Background */}
@@ -623,22 +644,30 @@ export default function PlatinumTemplate14() {
                   >
                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full overflow-hidden ring-4 ring-blue-800 shadow-xl">
                       <img
-                        src="/images/prewed-1.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiPria ||
+                          "/images/prewed-1.jpg"
+                        }
                         alt="Mempelai Pria"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="mt-36">
                       <h4 className="text-3xl font-semibold text-blue-950">
-                        Vidi
+                        {dataMempelai?.namaLengkapPria || "Putra"}
                       </h4>
                       <p className="text-gray-600 mt-2 italic text-sm">
-                        Putra dari Bapak Ahmad & Ibu Siti
+                        Putra dari Bapak{" "}
+                        {dataMempelai?.ayahMempelaiPria || "Ahmad"} & Ibu{" "}
+                        {dataMempelai?.ibuMempelaiPria || "Siti"}
                       </p>
 
                       {/* 🔗 Instagram Icon */}
                       <a
-                        href="https://instagram.com/vidiofficial" // Ganti sesuai akun
+                        href={
+                          dataMempelai?.instagramPria ||
+                          "https://instagram.com/vidiofficial"
+                        } // Ganti sesuai akun
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center mt-4 text-slate-600 hover:text-slate-800 transition-colors duration-300"
@@ -686,22 +715,30 @@ export default function PlatinumTemplate14() {
                   >
                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full overflow-hidden ring-4 ring-amber-300 shadow-xl">
                       <img
-                        src="/images/prewed-2.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiWanita ||
+                          "/images/prewed-2.jpg"
+                        }
                         alt="Mempelai Wanita"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="mt-36">
                       <h4 className="text-3xl font-semibold text-amber-700">
-                        Riffany
+                        {dataMempelai?.namaLengkapWanita || "Putri"}
                       </h4>
                       <p className="text-gray-600 mt-2 italic text-sm">
-                        Putri dari Bapak Yusuf & Ibu Laila
+                        Putri dari Bapak{" "}
+                        {dataMempelai?.ayahMempelaiWanita || "Yusuf"} & Ibu
+                        {dataMempelai?.ibuMempelaiWanita || "Laila"}
                       </p>
 
                       {/* 🔗 Instagram Icon */}
                       <a
-                        href="https://instagram.com/riffany.official" // Ganti sesuai akun
+                        href={
+                          dataMempelai?.instagramWanita ||
+                          "https://instagram.com/riffany.official"
+                        } // Ganti sesuai akun
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center mt-4 text-amber-600 hover:text-amber-800 transition-colors duration-300"
@@ -726,10 +763,12 @@ export default function PlatinumTemplate14() {
                   transition={{ delay: 0.6, duration: 1 }}
                 >
                   <p className="text-xl md:text-2xl text-amber-700 font-semibold mb-2">
-                    🗓️ Sabtu, 21 Desember 2025
+                    🗓️ {dataMempelai?.tanggalAkad || "Sabtu, 21 Desember 2025"}
                   </p>
                   <p className="text-lg md:text-xl text-gray-600">
-                    📍 Gedung Puri Indah Convention Hall, Jakarta
+                    📍{" "}
+                    {dataMempelai?.lokasiAkad ||
+                      "Gedung Puri Indah Convention Hall, Jakarta"}
                   </p>
                   <motion.p
                     className="mt-8 italic text-gray-500 max-w-xl mx-auto text-base"
@@ -822,6 +861,7 @@ export default function PlatinumTemplate14() {
               <section className="flex flex-col items-center justify-center space-y-12 py-16 bg-transparent">
                 {/* Akad Nikah */}
                 <motion.section
+                  id="kalender"
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
@@ -942,6 +982,7 @@ export default function PlatinumTemplate14() {
 
               {/* love story */}
               <motion.section
+                id="love"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -976,12 +1017,15 @@ export default function PlatinumTemplate14() {
                       Awal Pertemuan
                     </h3>
                     <p className="text-gray-300 mt-3">
-                      Tak ada yang kebetulan dalam rencana Tuhan. Di antara
+                      {dataMempelai?.loveStory[0].text ||
+                        `Tak ada yang kebetulan dalam rencana Tuhan. Di antara
                       banyak wajah, kami dipertemukan dengan cara yang tak
                       disangka. Satu senyum, satu sapaan, menjadi awal dari
-                      kisah yang perlahan tumbuh menjadi cinta.
+                      kisah yang perlahan tumbuh menjadi cinta.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-500 italic">2019</p>
+                    <p className="mt-4 text-sm text-gray-500 italic">
+                      {dataMempelai?.loveStory[0].when || "2019"}
+                    </p>
                   </motion.div>
 
                   {/* Step 2 */}
@@ -997,12 +1041,15 @@ export default function PlatinumTemplate14() {
                       Tumbuh Dalam Doa
                     </h3>
                     <p className="text-gray-300 mt-3">
-                      Dalam perjalanan waktu, kami belajar tentang kesabaran dan
+                      {dataMempelai?.loveStory[1].text ||
+                        `Dalam perjalanan waktu, kami belajar tentang kesabaran dan
                       arti saling memahami. Kami berdoa di waktu yang sama,
                       meniti langkah bersama, hingga akhirnya yakin bahwa takdir
-                      memang telah menulis nama kami berdampingan.
+                      memang telah menulis nama kami berdampingan.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-500 italic">2021</p>
+                    <p className="mt-4 text-sm text-gray-500 italic">
+                      {dataMempelai?.loveStory[1].when || "2021"}
+                    </p>
                   </motion.div>
 
                   {/* Step 3 */}
@@ -1018,12 +1065,15 @@ export default function PlatinumTemplate14() {
                       Menuju Satu Ikatan
                     </h3>
                     <p className="text-gray-300 mt-3">
-                      Di bawah sinar bulan dan restu keluarga, kami mengikrarkan
+                      {dataMempelai?.loveStory[2].text ||
+                        `Di bawah sinar bulan dan restu keluarga, kami mengikrarkan
                       janji untuk berjalan seirama menuju kehidupan baru. Cinta
                       kami kini bukan hanya tentang dua hati, tapi satu takdir
-                      yang menyatu selamanya.
+                      yang menyatu selamanya.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-500 italic">2025</p>
+                    <p className="mt-4 text-sm text-gray-500 italic">
+                      {dataMempelai?.loveStory[2].when || "2025"}
+                    </p>
                   </motion.div>
                 </div>
 
@@ -1040,6 +1090,7 @@ export default function PlatinumTemplate14() {
 
               {/* Galeri Foto */}
               <motion.section
+                id="galeri"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -1074,10 +1125,10 @@ export default function PlatinumTemplate14() {
                     {/* Auto-slide pakai CSS animation */}
                     <div className="slider w-full h-full flex animate-slide">
                       {[
-                        "/images/prewed-1.jpg",
-                        "/images/prewed-2.jpg",
-                        "/images/bg-wedding.jpg",
-                        "/images/bg.jpg",
+                        dataMempelai?.gallery[0] || "/images/prewed-1.jpg",
+                        dataMempelai?.gallery[1] || "/images/prewed-2.jpg",
+                        dataMempelai?.gallery[2] || "/images/bg-wedding.jpg",
+                        dataMempelai?.gallery[3] || "/images/bg.jpg",
                       ].map((src, i) => (
                         <div key={i} className="min-w-full h-full relative">
                           <img
@@ -1110,34 +1161,57 @@ export default function PlatinumTemplate14() {
 
                 {/* Galeri grid */}
                 <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {[
-                    "/images/prewed-1.jpg",
-                    "/images/prewed-2.jpg",
-                    "/images/tmp.jpg",
-                    "/images/bg-wedding.jpg",
-                    "/images/bg.jpg",
-                  ].map((src, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
-                      onClick={() => setSelectedImage(src)}
-                    >
-                      <img
-                        src={src}
-                        alt={`Foto ${i + 1}`}
-                        className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
-                      />
-                      {/* Overlay hover */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
-                        <span className="text-white text-sm md:text-base font-medium tracking-wide">
-                          Klik untuk melihat
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {dataMempelai?.gallery.length > 0
+                    ? dataMempelai?.gallery.map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))
+                    : [
+                        "/images/prewed-1.jpg",
+                        "/images/prewed-2.jpg",
+                        "/images/tmp.jpg",
+                        "/images/bg-wedding.jpg",
+                        "/images/bg.jpg",
+                      ].map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
                 </div>
 
                 {/* Lightbox modal */}
@@ -1301,6 +1375,7 @@ export default function PlatinumTemplate14() {
 
               {/* Form RSPV */}
               <motion.form
+                id="rspv"
                 onSubmit={handleSubmit}
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1510,6 +1585,7 @@ export default function PlatinumTemplate14() {
                   </motion.div>
                 </div>
               </motion.section>
+
               {/* Penutup */}
               <motion.section
                 initial={{ opacity: 0, y: 50 }}
@@ -1518,6 +1594,14 @@ export default function PlatinumTemplate14() {
                 viewport={{ once: true }}
                 className="relative py-20 mt-12 bg-gradient-to-b from-slate-50 via-white to-slate-100 overflow-hidden text-center"
               >
+                {/* foto penutup */}
+                <motion.img
+                  src={dataMempelai?.fotoSampul[0] || "/aset-foto/sampul.webp"}
+                  loading="lazy"
+                  alt="Bunga Pembuka"
+                  className=" w-[200px] mx-auto border-4 border-[#a38751]  h-[270px] object-cover rounded-4xl"
+                />
+
                 {/* Ucapan Terima Kasih */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -1546,7 +1630,8 @@ export default function PlatinumTemplate14() {
                   {/* Nama Pasangan */}
                   <div className="flex flex-col items-center space-y-4">
                     <h3 className="text-3xl font-bold text-gray-800 font-serif">
-                      Aulia & Rafi
+                      {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                      {dataMempelai?.panggilanWanita || "Putri"}
                     </h3>
                     <motion.div
                       initial={{ scale: 0 }}

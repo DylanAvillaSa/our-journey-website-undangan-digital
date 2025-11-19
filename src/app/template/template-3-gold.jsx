@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { PlayCircle, PauseCircle, Heart } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import Countdown2 from "@/components/paket/gold/Countdown";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
 import GallerySection2 from "@/components/paket/gold/GallerySectionVersi2";
 import DetailAcara2 from "@/components/paket/gold/DetailAcara2";
 import UcapanRSVP2 from "@/components/paket/gold/UcapanRSPV2";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const initialMessages = [
@@ -72,12 +75,15 @@ const itemVariants = {
   visible: { opacity: 1, scale: 1, y: 0 },
   exit: { opacity: 0, scale: 0.5, y: 10 },
 };
-export default function Template3Gold() {
+export default function Template3Gold({ id, data }) {
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
 
   const [switcher, setSwitcher] = useState(false);
   const [opened, setOpened] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(data || null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("blush");
 
@@ -96,23 +102,36 @@ export default function Template3Gold() {
   });
 
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [
-    "/gallery/p1.jpg",
-    "/gallery/p2.jpg",
-    "/gallery/p3.jpg",
-    "/gallery/p4.jpg",
-  ];
   const T = THEMES[theme];
 
   const handleOpen = () => setOpened(true);
 
+  // ambil data dari database
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((s) => (s === slides.length - 1 ? 0 : s + 1));
-    }, 4000); // ganti slide tiap 4 detik
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Gold 3"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna);
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (opened && rsvpRef.current) {
@@ -175,7 +194,7 @@ export default function Template3Gold() {
     const end = formatForGoogle(endDate);
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      "Vidi & Riffany Wedding"
+      `${dataMempelai?.panggilanPria} & ${dataMempelai?.panggilanWanita} Wedding`
     )}&dates=${start}/${end}&details=${encodeURIComponent(
       "Acara pernikahan kami"
     )}&location=${encodeURIComponent("Masjid Al-Falah, Jakarta Selatan")}`;
@@ -193,7 +212,7 @@ export default function Template3Gold() {
         ref={audioRef}
         autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound}
         className="hidden"
       />
 
@@ -219,17 +238,19 @@ export default function Template3Gold() {
       </div>
 
       {/* ===== Switcher (tengah bawah) ===== */}
-      <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
-        <div
-          className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
+      {!dataMempelai?.temaWarna && (
+        <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
+          <div
+            className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
       text-white flex items-center justify-center ${
         switcher ? "hidden" : "opacity-35"
       } group`}
-          onClick={() => setSwitcher(!switcher)}
-        >
-          Theme
+            onClick={() => setSwitcher(!switcher)}
+          >
+            Theme
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {switcher && (
@@ -283,7 +304,7 @@ export default function Template3Gold() {
         >
           {/* Background Foto */}
           <Image
-            src="/images/bg-wedding.jpg"
+            src={dataMempelai?.fotoSampul[0] || "/images/bg-wedding.jpg"}
             alt="Pasangan"
             fill
             className="object-cover w-full h-full opacity-95"
@@ -301,11 +322,17 @@ export default function Template3Gold() {
             <div
               className={`mx-auto w-44 h-44 flex items-center justify-center rounded-full border-4 ${THEMES[theme].border} relative mb-6`}
             >
-              <span className="text-3xl font-bold">A & H</span>
+              <span className="text-3xl font-bold">
+                {" "}
+                {dataMempelai?.panggilanPria[0].toUpperCase()} &{" "}
+                {dataMempelai?.panggilanWanita[0].toUpperCase()}
+              </span>
             </div>
 
             <p className="mb-1 text-base">Kepada Yth.</p>
-            <h2 className="text-xl font-semibold mb-6">Ismed Novian</h2>
+            <h2 className="text-xl font-semibold mb-6">
+              {namaTamu || "Nama Tamu"}
+            </h2>
 
             {/* Tombol Buka Undangan */}
             <motion.button
@@ -327,7 +354,7 @@ export default function Template3Gold() {
           <div className="relative w-full h-[100vh] overflow-hidden">
             {/* Background dengan efek zoom */}
             <Image
-              src="/images/bg-wedding.jpg"
+              src={dataMempelai?.fotoSampul[1] || "/images/bg-wedding.jpg"}
               width={1920}
               height={1080}
               alt="Pasangan"
@@ -357,9 +384,13 @@ export default function Template3Gold() {
                 transition={{ duration: 1 }}
                 className="flex gap-2 items-center justify-center text-3xl md:text-5xl font-bold"
               >
-                <span className="font-[var(--font-vibes)]">Anissa</span>
+                <span className="font-[var(--font-vibes)]">
+                  {dataMempelai?.panggilanPria}
+                </span>
                 <span className="font-[var(--font-vibes)] text-4xl">&</span>
-                <span className="font-[var(--font-vibes)]">Hamzah</span>
+                <span className="font-[var(--font-vibes)]">
+                  {dataMempelai?.panggilanWanita}
+                </span>
               </motion.div>
 
               {/* Save The Date */}
@@ -374,7 +405,10 @@ export default function Template3Gold() {
 
               {/* Countdown */}
               <div className="px-4">
-                <Countdown2 date="2025-11-25T08:00:00" />
+                <Countdown2
+                  date={dataMempelai?.countdownDate}
+                  waktu={dataMempelai?.countdownTime}
+                />
               </div>
 
               {/* Box tanggal */}
@@ -384,7 +418,9 @@ export default function Template3Gold() {
                 transition={{ duration: 1.2 }}
                 className={`${THEMES[theme].cta} mt-6 bg-white rounded-xl shadow-lg flex items-center px-6 py-3`}
               >
-                <span className="font-bold text-lg">19 September 2025</span>
+                <span className="font-bold text-lg">
+                  {dataMempelai?.tanggalAkad}
+                </span>
               </motion.div>
             </div>
           </div>
@@ -417,17 +453,21 @@ export default function Template3Gold() {
               >
                 <div className="relative w-40 h-40 md:w-48 md:h-48 mb-6">
                   <Image
-                    src="/foto-dummy/wanita.png"
+                    src={
+                      dataMempelai?.fotoMempelaiWanita[0] ||
+                      "/foto-dummy/wanita.png"
+                    }
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-md"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Anissa Putri
+                  {dataMempelai?.panggilanWanita || "Anissa"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putri dari Bapak Ahmad & Ibu Siti
+                  Putri dari Bapak {dataMempelai?.ayahMempelaiWanita} & Ibu{" "}
+                  {dataMempelai?.ibuMempelaiWanita}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang wanita penyayang, penuh perhatian, dan selalu ceria
@@ -442,17 +482,21 @@ export default function Template3Gold() {
               >
                 <div className="relative w-40 h-40 md:w-48 md:h-48 mb-6">
                   <Image
-                    src="/foto-dummy/pria.png"
+                    src={
+                      dataMempelai?.fotoMempelaiPria[0] ||
+                      "/foto-dummy/pria.png"
+                    }
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-md"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Vidi Lukman
+                  {dataMempelai?.panggilanPria}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putra dari Bapak Yusuf & Ibu Aminah
+                  Putra dari Bapak {dataMempelai?.ayahMempelaiPria || "Samsul"}{" "}
+                  & Ibu {dataMempelai?.ibuMempelaiPria || "Maryam"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang pria sederhana, penuh tanggung jawab, dan sabar yang
@@ -498,71 +542,109 @@ export default function Template3Gold() {
             </h2>
 
             <div className="relative border-l-4 border-dashed border-gray-300 dark:border-gray-600">
-              {[
-                {
-                  year: "2019",
-                  title: "First Met",
-                  desc: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
-                },
-                {
-                  year: "2020",
-                  title: "First Date",
-                  desc: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
-                },
-                {
-                  year: "2022",
-                  title: "Engagement",
-                  desc: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
-                },
-                {
-                  year: "2025",
-                  title: "Wedding Day",
-                  desc: "Hari spesial di mana kami berjanji sehidup semati.",
-                },
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  className="mb-10 ml-6 relative"
-                  initial={{ opacity: 0, x: idx % 2 === 0 ? -60 : 60 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: 0.8,
-                    ease: "easeOut",
-                    delay: idx * 0.2,
-                  }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  {/* Dot Icon */}
-                  <span
-                    className={`absolute -left-3 top-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ${THEMES[theme].cta}`}
-                  >
-                    <span className="w-2 h-2 bg-white rounded-full"></span>
-                  </span>
-
-                  {/* Card */}
-                  <div
-                    className={`bg-white dark:${THEMES[theme].chip} rounded-xl shadow-lg p-5`}
-                  >
-                    <p className="text-sm text-gray-400">{item.year}</p>
-                    <h3
-                      className={`text-lg font-semibold ${THEMES[theme].text}`}
+              {dataMempelai?.loveStory.length > 0
+                ? dataMempelai?.loveStory.map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="mb-10 ml-6 relative"
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -60 : 60 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.8,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Dot Icon */}
+                      <span
+                        className={`absolute -left-3 top-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ${THEMES[theme].cta}`}
+                      >
+                        <span className="w-2 h-2 bg-white rounded-full"></span>
+                      </span>
+
+                      {/* Card */}
+                      <div
+                        className={`bg-white dark:${THEMES[theme].chip} rounded-xl shadow-lg p-5`}
+                      >
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-lg font-semibold ${THEMES[theme].text}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-gray-400">{item.text}</p>
+                      </div>
+                    </motion.div>
+                  ))
+                : [
+                    {
+                      title: "Kenalan",
+                      when: "2018",
+                      text: "Ketemu di kafe dekat kampus. Dari obrolan ringan sampai akhirnya sering ketemu.",
+                    },
+                    {
+                      title: "Jadian",
+                      when: "2019",
+                      text: "Mulai pacaran setelah beberapa bulan PDKT yang penuh deg-degan.",
+                    },
+                    {
+                      title: "Lamaran",
+                      when: "2024",
+                      text: "Lamaran sederhana di rumah keluarga dengan penuh kebahagiaan.",
+                    },
+                    {
+                      title: "Menikah",
+                      when: "2025",
+                      text: "Akhirnya resmi mengikat janji suci dan memulai perjalanan hidup bersama ❤️",
+                      highlight: true,
+                    },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="mb-10 ml-6 relative"
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -60 : 60 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.8,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
+                    >
+                      {/* Dot Icon */}
+                      <span
+                        className={`absolute -left-3 top-1 w-6 h-6 rounded-full flex items-center justify-center shadow-md ${THEMES[theme].cta}`}
+                      >
+                        <span className="w-2 h-2 bg-white rounded-full"></span>
+                      </span>
+
+                      {/* Card */}
+                      <div
+                        className={`bg-white dark:${THEMES[theme].chip} rounded-xl shadow-lg p-5`}
+                      >
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-lg font-semibold ${THEMES[theme].text}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-gray-400">{item.text}</p>
+                      </div>
+                    </motion.div>
+                  ))}
             </div>
           </motion.section>
 
           {/* Gallery */}
-          <GallerySection2 />
+          <GallerySection2 datamempelai={dataMempelai} />
 
           {/* Detail Acara (Akad & Resepsi) */}
-          <DetailAcara2 T={theme} background={THEMES} />
+          <DetailAcara2
+            T={theme}
+            background={THEMES}
+            datamempelai={dataMempelai}
+          />
 
           {/* QR + Map Embed + Gallery small */}
           <motion.section
@@ -578,7 +660,10 @@ export default function Template3Gold() {
               >
                 <h4 className="font-semibold mb-2">Peta Lokasi</h4>
                 <iframe
-                  src="https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  src={
+                    dataMempelai?.linkMaps ||
+                    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.53239897237!2d106.82715237569926!3d-6.175392860475799!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e7cbf1e3db%3A0x2c58d9bdfa4b0b0!2sMonas!5e0!3m2!1sid!2sid!4v1700000000000"
+                  }
                   width="100%"
                   height="200"
                   className="border-0 rounded-md"
@@ -616,7 +701,11 @@ export default function Template3Gold() {
             transition={{ duration: 0.6 }}
             className="py-10 px-4"
           >
-            <AmplopGift background={THEMES} T={theme} />
+            <AmplopGift
+              background={THEMES}
+              T={theme}
+              datamempelai={dataMempelai}
+            />
           </motion.section>
 
           {/* Footer */}
@@ -646,12 +735,17 @@ export default function Template3Gold() {
                 className="text-pink-500 animate-pulse"
                 fill="currentColor"
               />
-              <span>Vidi & Tijani</span>
+              <span>
+                {dataMempelai?.panggilanPria || "Hamzah"} &{" "}
+                {dataMempelai?.panggilanWanita || "Syahla"}
+              </span>
             </div>
 
             {/* Small copyright */}
             <p className="mt-4 text-xs text-gray-400">
-              © {new Date().getFullYear()} Vidi & Tijani Wedding
+              © {new Date().getFullYear()}{" "}
+              {dataMempelai?.panggilanPria || "Hamzah"} &{" "}
+              {dataMempelai?.panggilanWanita || "Syahla"} Wedding
             </p>
           </motion.footer>
         </div>

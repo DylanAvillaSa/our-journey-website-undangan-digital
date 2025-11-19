@@ -1,52 +1,74 @@
 "use client";
 
 import { motion } from "framer-motion";
-
 import { useState, useRef, useEffect } from "react";
-
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import Image from "next/image";
 import CountdownSection from "@/components/paket/silver/template1/CountdownSection";
+import { useSearchParams } from "next/navigation";
 
-const messages = [
-  {
-    name: "Team Our Journey",
-    time: "2025-08-09 16:17:53",
-    message: "Semoga acaranya berjalan dengan lancar dan sesuai rencana 🙏🙏🙏",
-  },
-  {
-    name: "Budi Santoso",
-    time: "2025-08-09 17:45:10",
-    message: "Selamat menempuh hidup baru, semoga bahagia selalu ❤️",
-  },
-  {
-    name: "Siti Aminah",
-    time: "2025-08-09 18:05:22",
-    message: "Barakallah, semoga menjadi keluarga sakinah mawaddah warahmah 🤲",
-  },
-];
-
-export default function Template1Silver() {
+export default function Template1Silver({ id, data }) {
   const rsvpRef = useRef(null);
-  const [dataMempelai, setDataMempelai] = useState(null);
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
+  const [dataMempelai, setDataMempelai] = useState(data || null);
   const [kehadiran, setKehadiran] = useState("");
+  const [messages, setMessages] = useState([]);
   const [formDataTamu, setFormDataTamu] = useState({
     nama_tamu_undangan: "",
     kehadiran: "",
   });
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
   const [opened, setOpened] = useState(false);
 
   const handleOpen = () => {
     setOpened(true);
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    }, 1000);
   };
 
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  // 🔥 Ambil data Firestore
   useEffect(() => {
-    const getData = async () => {
-      const res = await fetch("/data/data.json");
-      const data = await res.json();
-      setDataMempelai(data.find((d) => d.template === "Silver"));
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Silver 1"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+        } else {
+          console.log("");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
     };
 
-    getData();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -97,16 +119,17 @@ export default function Template1Silver() {
               alt="pasangan"
             />
           </div>
+
           <h1 className="text-3xl font-bold mb-2 text-[#A47148]">
-            {dataMempelai?.nama_mempelai_pria} &{" "}
-            {dataMempelai?.nama_mempelai_wanita}
+            {dataMempelai?.namaLengkapPria || "Randy"} &{" "}
+            {dataMempelai?.namaLengkapWanita || "Santi"}
           </h1>
           <p className="text-sm text-[#7B5E57]">
             Tanpa Mengurangi Rasa Hormat, Kami Mengundang Bapak/Ibu/Saudara/i
             untuk Hadir di Acara Kami.
           </p>
           <p className="mt-2 text-[#4A3C35] font-semibold">
-            Kepada Bapak Handoko
+            Kepada {namaTamu || "Nama Tamu"}
           </p>
           <motion.button
             onClick={handleOpen}
@@ -126,6 +149,25 @@ export default function Template1Silver() {
           transition={{ duration: 1 }}
           className="text-center p-4 bg-[#F9F5F2] min-h-screen relative text-[#6F4E37] mt-24"
         >
+          {/* 🎵 Audio Backsound */}
+          <audio
+            ref={audioRef}
+            src={dataMempelai?.backsound}
+            loop
+            preload="auto"
+          />
+
+          {/* 🎵 Tombol Play/Pause Melayang */}
+          {opened && (
+            <div className="fixed bottom-6 right-6 z-50">
+              <button
+                onClick={toggleAudio}
+                className="bg-[#CBB59D] hover:bg-[#b6a086] text-white p-4 rounded-full shadow-lg transition transform hover:scale-105 focus:outline-none"
+              >
+                {isPlaying ? "⏸️" : "🎵"}
+              </button>
+            </div>
+          )}
           <Image
             src="/asset/ornament.png"
             alt="flower deco"
@@ -143,7 +185,7 @@ export default function Template1Silver() {
 
           {/* Gambar mempelai */}
           <Image
-            src="/foto-dummy/pembuka.jpg"
+            src={dataMempelai?.fotoMempelaiWanita || "/foto-dummy/wanita.png"}
             width={160}
             height={160}
             alt="Foto Mempelai"
@@ -152,8 +194,8 @@ export default function Template1Silver() {
 
           {/* Nama mempelai */}
           <h2 className="mt-4 text-3xl font-cursive text-[#A47148]">
-            The Wedding of {dataMempelai?.nama_mempelai_pria} &{" "}
-            {dataMempelai?.nama_mempelai_wanita}
+            The Wedding of {dataMempelai?.panggilanPria || "Randy"} &{" "}
+            {dataMempelai?.panggilanWanita || "Santi"}
           </h2>
 
           {/* Ucapan Terima Kasih */}
@@ -175,7 +217,9 @@ export default function Template1Silver() {
           <h2 className="mt-4">- Ar-Rum Ayat 21 -</h2>
 
           {/* Countdown */}
-          <CountdownSection />
+          <CountdownSection
+            date={`${dataMempelai?.countdownDate}T${dataMempelai?.countdownTime}`}
+          />
 
           {/*kedua mempelai */}
           <section>
@@ -204,7 +248,9 @@ export default function Template1Silver() {
               <div className="relative mt-6">
                 <div className="rounded-full border-4 border-[#e2d6cd] w-52 h-52 mx-auto overflow-hidden">
                   <img
-                    src="/foto-dummy/pria.png"
+                    src={
+                      dataMempelai?.fotoMempelaiPria || "/foto-dummy/pria.png"
+                    }
                     alt="Groom"
                     className="object-cover w-full h-full"
                   />
@@ -213,13 +259,12 @@ export default function Template1Silver() {
 
               {/* Nama dan keterangan */}
               <h2 className="text-[#826259] text-2xl font-semibold mt-6">
-                {dataMempelai?.nama_mempelai_pria}
+                {dataMempelai?.namaLengkapPria || "Randy Samsuri"}
               </h2>
               <p className="text-[#4d4139] text-sm mt-2">
-                Anak Pertama dari Pasangan <br />
-                Bapak Si pria & <br />
-                Ibu Si pria <br />
-                Beralamat di Alamat rumah si pria
+                Anak dari Pasangan <br />
+                Bapak {dataMempelai?.ayahMempelaiPria || "Samsul"}& <br />
+                Ibu Si {dataMempelai?.ibuMempelaiPria || "Sumiati"} <br />
               </p>
             </section>
 
@@ -247,13 +292,13 @@ export default function Template1Silver() {
 
               {/* Nama dan keterangan */}
               <h2 className="text-[#826259] text-2xl font-semibold mt-6">
-                {dataMempelai?.nama_mempelai_wanita}
+                {dataMempelai?.namaLengkapWanita || "Santi Julianti"}
               </h2>
               <p className="text-[#4d4139] text-sm mt-2">
-                Anak Kedua dari Pasangan <br />
-                Bapak Si Wanita & <br />
-                Ibu Si Wanita <br />
-                Beralamat di Alamat rumah si pria
+                Anak dari Pasangan <br />
+                Bapak Si {dataMempelai?.ayahMempelaiWanita || "Samsuri"} &{" "}
+                <br />
+                Ibu Si {dataMempelai?.ibuMempelaiWanita || "Siti"} <br />
               </p>
             </section>
           </section>
@@ -283,13 +328,13 @@ export default function Template1Silver() {
             <div className="relative w-[90%] max-w-md -mt-12 z-40">
               <div className="bg-white/95 backdrop-blur-md rounded-3xl px-6 py-6 border-[3px] border-dashed border-[#F0C84C] shadow-[0_25px_40px_rgba(0,0,0,0.25)]">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-900">
-                  Jumat, 15 Agustus 2025
+                  {dataMempelai?.tanggalAkad}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Pukul 13:30 - 20:00
+                  Pukul {dataMempelai?.jamAkad}
                 </p>
                 <p className="text-sm text-gray-700 mt-3">
-                  Lokasi alamat acara
+                  {dataMempelai?.lokasiAkad}
                 </p>
               </div>
             </div>
@@ -308,12 +353,12 @@ export default function Template1Silver() {
                   Akad Nikah
                 </h3>
                 <p className="text-sm text-gray-700">
-                  Jumat, 15 Agustus 2025 <br />
-                  Pukul 08:00 WIB <br />
-                  Masjid Al-Ikhlas, Jl. Melati No. 45, Bandung
+                  {dataMempelai?.akadTanggal || "23 Oktober 2025"} <br />
+                  Pukul {`${dataMempelai?.jamAkad || "09:00"} WIB`} <br />
+                  {dataMempelai?.lokasiAkad}
                 </p>
                 <a
-                  href="https://maps.google.com?q=Masjid+Al+Ikhlas+Bandung"
+                  href={dataMempelai?.linkMaps}
                   target="_blank"
                   className="inline-block mt-3 text-sm text-white bg-[#A47148] px-4 py-2 rounded-full hover:bg-[#8c5f3b] transition"
                 >
@@ -327,12 +372,12 @@ export default function Template1Silver() {
                   Resepsi
                 </h3>
                 <p className="text-sm text-gray-700">
-                  Jumat, 15 Agustus 2025 <br />
-                  Pukul 13:30 - 20:00 WIB <br />
-                  Gedung Serba Guna Cempaka, Bandung
+                  {dataMempelai?.tanggalResepsi || "24 Oktober 2025"} <br />
+                  Pukul {`${dataMempelai?.jamResepsi || "10:00"} WIB`} <br />
+                  {dataMempelai?.lokasiResepsi}
                 </p>
                 <a
-                  href="https://maps.google.com?q=Gedung+Serba+Guna+Cempaka+Bandung"
+                  href={dataMempelai?.linkMapsResepsi}
                   target="_blank"
                   className="inline-block mt-3 text-sm text-white bg-[#A47148] px-4 py-2 rounded-full hover:bg-[#8c5f3b] transition"
                 >
@@ -354,28 +399,18 @@ export default function Template1Silver() {
 
             <div className="grid md:grid-cols-2 gap-6 mt-4">
               <div className="bg-white rounded-xl border border-[#E6D3B1] shadow-md p-4">
-                <h3 className="font-semibold text-[#6F4E37]">BCA</h3>
-                <p className="text-sm">No. Rekening: 1234567890</p>
+                <h3 className="font-semibold text-[#6F4E37]">
+                  {dataMempelai?.jenisRekening || "BCA"}
+                </h3>
+                <p className="text-sm">
+                  No. Rekening: {dataMempelai?.nomorRekening || "1234567890"}
+                </p>
                 <p className="text-sm text-gray-600">
-                  a.n. {dataMempelai?.nama_mempelai_pria}
+                  a.n. {dataMempelai?.namaLengkapPria}
                 </p>
                 <button
                   className="mt-3 px-4 py-2 text-sm bg-[#A47148] text-white rounded-full hover:bg-[#8c5f3b]"
                   onClick={() => navigator.clipboard.writeText("1234567890")}
-                >
-                  Salin Nomor
-                </button>
-              </div>
-
-              <div className="bg-white rounded-xl border border-[#E6D3B1] shadow-md p-4">
-                <h3 className="font-semibold text-[#6F4E37]">BNI</h3>
-                <p className="text-sm">No. Rekening: 9876543210</p>
-                <p className="text-sm text-gray-600">
-                  a.n. {dataMempelai?.nama_mempelai_wanita}
-                </p>
-                <button
-                  className="mt-3 px-4 py-2 text-sm bg-[#A47148] text-white rounded-full hover:bg-[#8c5f3b]"
-                  onClick={() => navigator.clipboard.writeText("9876543210")}
                 >
                   Salin Nomor
                 </button>
@@ -394,10 +429,7 @@ export default function Template1Silver() {
           </section>
 
           {/* form rsvp */}
-          <section
-            className="py-10 px-4 bg-cover bg-center"
-            style={{ backgroundImage: "url('/marble-texture.png')" }}
-          >
+          <section className="py-10 px-4 bg-cover bg-center">
             <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-yellow-300">
               {/* Judul */}
               <h1 className="text-center text-3xl font-[GreatVibes] text-[#A47148] mb-6">
@@ -454,10 +486,7 @@ export default function Template1Silver() {
           </section>
 
           {/* section tamu undangan */}
-          <section
-            className="py-8 px-4 bg-cover bg-center"
-            style={{ backgroundImage: "url('/marble-texture.png')" }}
-          >
+          <section className="py-8 px-4 bg-cover bg-center">
             <div className="max-w-lg mx-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-5 border border-yellow-200">
               {/* Statistik */}
               <div className="flex flex-wrap gap-4 text-sm mb-4">

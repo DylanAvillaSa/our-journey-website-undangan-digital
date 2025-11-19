@@ -3,15 +3,15 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-export default function Gallery4({ background, theme }) {
-  const sliderPhotos = [
+export default function Gallery4({ background, theme, datamempelai }) {
+  const sliderPhotos = datamempelai?.gallery || [
     "/images/prewed-1.jpg",
     "/images/prewed-2.jpg",
     "/images/tmp.jpg",
     "/images/bg-wedding.jpg",
   ];
 
-  const galleryPhotos = [
+  const galleryPhotos = datamempelai?.gallery || [
     "/images/prewed-1.jpg",
     "/images/prewed-2.jpg",
     "/images/tmp.jpg",

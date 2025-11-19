@@ -2,9 +2,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-export default function TheDate({ background, theme }) {
-  // Ganti ke tanggal di masa depan
-  const targetDate = new Date("2025-12-14T19:00:00");
+export default function TheDate({ background, theme, datamempelai }) {
+  // Ambil tanggal & waktu dari database
+  const rawDate = datamempelai?.countdownDate || "2025-12-14";
+  const rawTime = datamempelai?.countdownTime || "19:00";
+
+  // Gabungkan ke ISO string yang valid
+  const finalDateString = `${rawDate}T${rawTime}:00`;
+
+  // Buat target date
+  const targetDate = new Date(finalDateString);
 
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -30,12 +37,11 @@ export default function TheDate({ background, theme }) {
       }
     };
 
-    // panggil langsung sekali biar gak delay 1 detik
-    updateCountdown();
+    updateCountdown(); // biar tidak delay 1 detik
 
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [finalDateString]);
 
   return (
     <>

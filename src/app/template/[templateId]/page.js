@@ -17,7 +17,7 @@ import Template14Gold from "@/app/template/template-3-platinum";
 import Template15Gold from "@/app/template/template-4-platinum";
 import Template16Gold from "@/app/template/template-8-gold";
 
-const templatesMap = {
+export const templatesMap = {
   "template-1-silver": Template1Silver,
   "template-2-silver": Template2Silver,
   "template-3-silver": Template3Silver,

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function CountdownSection() {
+export default function CountdownSection({ date }) {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -12,7 +12,7 @@ export default function CountdownSection() {
   });
 
   // Tanggal pernikahan
-  const weddingDate = new Date("2025-08-15T13:30:00");
+  const weddingDate = new Date(date || "2025-08-15T13:30:00");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -41,19 +41,19 @@ export default function CountdownSection() {
       <h2 className="text-2xl font-semibold mb-4">Countdown to Our Wedding</h2>
       <div className="flex gap-4 text-[#A47148] text-xl font-semibold">
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border border-yellow-300">
-          <p className="text-3xl">{timeLeft.days}</p>
+          <p className="text-3xl">{timeLeft?.days || 0}</p>
           <span className="text-sm">Hari</span>
         </div>
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border border-yellow-300">
-          <p className="text-3xl">{timeLeft.hours}</p>
+          <p className="text-3xl">{timeLeft?.hours || 0}</p>
           <span className="text-sm">Jam</span>
         </div>
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border border-yellow-300">
-          <p className="text-3xl">{timeLeft.minutes}</p>
+          <p className="text-3xl">{timeLeft?.minutes || 0}</p>
           <span className="text-sm">Menit</span>
         </div>
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border border-yellow-300">
-          <p className="text-3xl">{timeLeft.seconds}</p>
+          <p className="text-3xl">{timeLeft?.seconds || 0}</p>
           <span className="text-sm">Detik</span>
         </div>
       </div>

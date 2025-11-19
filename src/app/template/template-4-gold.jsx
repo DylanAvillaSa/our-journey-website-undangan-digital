@@ -7,6 +7,9 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { parseDate, formatTime } from "@/config/formatDate";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
 import Image from "next/image";
 import { PlayCircle, PauseCircle, Heart } from "lucide-react";
@@ -14,6 +17,7 @@ import TheDate from "@/components/paket/gold/CountdownVersi2";
 import { CalendarDays } from "lucide-react";
 import Gallery3 from "@/components/paket/gold/GallerySectionVersi3";
 import { Bird } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const initialMessages = [
@@ -76,11 +80,13 @@ const itemVariants = {
   visible: { opacity: 1, scale: 1, y: 0 },
   exit: { opacity: 0, scale: 0.5, y: 10 },
 };
-export default function Template4Gold() {
+export default function Template4Gold({ id, data }) {
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
-
   const [switcher, setSwitcher] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(data || null);
   const [opened, setOpened] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("monochrome");
@@ -100,13 +106,6 @@ export default function Template4Gold() {
   });
 
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [
-    "/gallery/p1.jpg",
-    "/gallery/p2.jpg",
-    "/gallery/p3.jpg",
-    "/gallery/p4.jpg",
-  ];
   const T = THEMES[theme];
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 1000], [0, 200]);
@@ -127,12 +126,32 @@ export default function Template4Gold() {
 
   const handleOpen = () => setOpened(true);
 
+  // ambil data dari database
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((s) => (s === slides.length - 1 ? 0 : s + 1));
-    }, 4000); // ganti slide tiap 4 detik
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Gold 4"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna);
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (opened && rsvpRef.current) {
@@ -166,6 +185,12 @@ export default function Template4Gold() {
     }
   };
 
+  const akad = parseDate(dataMempelai?.tanggalAkad);
+
+  const jamAkad = formatTime(dataMempelai?.jamAkad);
+  const resepsi = parseDate(dataMempelai?.tanggalResepsi);
+  const jamResepsi = formatTime(dataMempelai?.jamResepsi);
+
   const addGuestMessage = (e) => {
     e.preventDefault();
     if (!guestForm.name || !guestForm.message) return;
@@ -195,7 +220,7 @@ export default function Template4Gold() {
     const end = formatForGoogle(endDate);
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      "Vidi & Riffany Wedding"
+      `${dataMempelai?.panggilanPria} & ${dataMempelai?.panggilanWanita} Wedding`
     )}&dates=${start}/${end}&details=${encodeURIComponent(
       "Acara pernikahan kami"
     )}&location=${encodeURIComponent("Masjid Al-Falah, Jakarta Selatan")}`;
@@ -213,7 +238,7 @@ export default function Template4Gold() {
         ref={audioRef}
         autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -239,17 +264,19 @@ export default function Template4Gold() {
       </div>
 
       {/* ===== Switcher (tengah bawah) ===== */}
-      <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
-        <div
-          className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
+      {!dataMempelai?.temaWarna && (
+        <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
+          <div
+            className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
       text-white flex items-center justify-center ${
         switcher ? "hidden" : "opacity-35"
       } group`}
-          onClick={() => setSwitcher(!switcher)}
-        >
-          Theme
+            onClick={() => setSwitcher(!switcher)}
+          >
+            Theme
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {switcher && (
@@ -303,7 +330,7 @@ export default function Template4Gold() {
         >
           {/* Background foto pasangan */}
           <Image
-            src="/images/bg-wedding.jpg" // ganti sesuai foto lu
+            src={dataMempelai?.fotoSampul[0] || "/images/bg-wedding.jpg"} // ganti sesuai foto lu
             alt="Pasangan"
             fill
             priority
@@ -329,12 +356,15 @@ export default function Template4Gold() {
 
             {/* Nama mempelai */}
             <h1 className="font-[--playfair] text-4xl md:text-5xl font-bold text-white mb-6">
-              Anna & Dandy
+              {dataMempelai?.panggilanWanita || "Anna"} &{" "}
+              {dataMempelai?.panggilanPria || "Dandy"}
             </h1>
 
             {/* Undangan untuk tamu */}
             <p className="text-white mb-2">Dear,</p>
-            <p className="text-xl font-semibold text-white mb-4">Nama Tamu</p>
+            <p className="text-xl font-semibold text-white mb-4">
+              {namaTamu || "Nama Tamu"}
+            </p>
             <p className="text-white/90 mb-6 text-sm leading-relaxed">
               Tanpa mengurangi hormat, kami mengundang anda untuk hadir di acara
               pernikahan kami.
@@ -366,7 +396,7 @@ export default function Template4Gold() {
             {/* Background dengan efek parallax */}
             <motion.div style={{ y, scale }} className="absolute inset-0">
               <Image
-                src="/images/bg-wedding.jpg"
+                src={dataMempelai?.fotoSampul[1] || "/images/bg-wedding.jpg"}
                 width={1920}
                 height={1080}
                 alt="Pasangan"
@@ -397,7 +427,8 @@ export default function Template4Gold() {
                 transition={{ duration: 1 }}
                 className="font-[var(--font-vibes)] text-4xl md:text-6xl font-bold drop-shadow-lg"
               >
-                Anna & Dandy
+                {dataMempelai?.panggilanWanita || "Anna"} &{" "}
+                {dataMempelai?.panggilanPria || "Dandy"}
               </motion.h1>
 
               {/* Tanggal */}
@@ -407,7 +438,7 @@ export default function Template4Gold() {
                 transition={{ duration: 1.2 }}
                 className="mt-6 text-sm md:text-lg tracking-wide"
               >
-                Maret • 12 • 2025
+                {dataMempelai?.tanggalAkad || "Maret • 12 • 2025"}
               </motion.p>
             </div>
           </div>
@@ -536,17 +567,22 @@ export default function Template4Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/wanita.png"
+                    src={
+                      dataMempelai?.fotoMempelaiWanita[0] ||
+                      "/foto-dummy/wanita.png"
+                    }
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Anissa Putri
+                  {dataMempelai?.namaLengkapWanita || "Anna"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putri dari Bapak Ahmad & Ibu Siti
+                  Putri dari Bapak{" "}
+                  {dataMempelai?.ayahMempelaiWanita || "Samsuri"} & Ibu{" "}
+                  {dataMempelai?.ibuMempelaiWanita || "Alie"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang wanita penyayang, penuh perhatian, dan selalu ceria
@@ -565,17 +601,21 @@ export default function Template4Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/pria.png"
+                    src={
+                      dataMempelai?.fotoMempelaiPria[0] ||
+                      "/foto-dummy/pria.png"
+                    }
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Vidi Lukman
+                  {dataMempelai?.namaLengkapPria || "Vidi Lukman"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putra dari Bapak Yusuf & Ibu Aminah
+                  Putra dari Bapak {dataMempelai?.ayahMempelaiPria || "Yusuf"} &
+                  Ibu {dataMempelai?.ibuMempelaiWanita || "Aminah"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang pria sederhana, penuh tanggung jawab, dan sabar yang
@@ -632,70 +672,115 @@ export default function Template4Gold() {
               ></div>
 
               {/* Items */}
-              {[
-                {
-                  year: "2019",
-                  title: "First Met",
-                  desc: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
-                },
-                {
-                  year: "2020",
-                  title: "First Date",
-                  desc: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
-                },
-                {
-                  year: "2022",
-                  title: "Engagement",
-                  desc: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
-                },
-                {
-                  year: "2025",
-                  title: "Wedding Day",
-                  desc: "Hari spesial di mana kami berjanji sehidup semati.",
-                },
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  className={`mb-16 flex items-center w-full ${
-                    idx % 2 === 0 ? "justify-start" : "justify-end"
-                  }`}
-                  initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: 1,
-                    ease: "easeOut",
-                    delay: idx * 0.2,
-                  }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  {/* Card */}
-                  <div
-                    className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
-                  >
-                    {/* Icon Dot */}
-                    <div
-                      className={`absolute top-6 ${
-                        idx % 2 === 0 ? "-right-8" : "-left-8"
-                      } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
-                        THEMES[theme].cta
+              {dataMempelai?.loveStory.length > 0
+                ? dataMempelai?.loveStory.map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
                       }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      <i className="fa-solid fa-heart text-white"></i>
-                    </div>
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
+                      >
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
 
-                    {/* Isi Card */}
-                    <p className="text-sm text-gray-400">{item.year}</p>
-                    <h3
-                      className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))
+                : [
+                    {
+                      title: "Kenalan",
+                      when: "2018",
+                      text: "Ketemu di kafe dekat kampus. Dari obrolan ringan sampai akhirnya sering ketemu.",
+                    },
+                    {
+                      title: "Jadian",
+                      when: "2019",
+                      text: "Mulai pacaran setelah beberapa bulan PDKT yang penuh deg-degan.",
+                    },
+                    {
+                      title: "Lamaran",
+                      when: "2024",
+                      text: "Lamaran sederhana di rumah keluarga dengan penuh kebahagiaan.",
+                    },
+                    {
+                      title: "Menikah",
+                      when: "2025",
+                      text: "Akhirnya resmi mengikat janji suci dan memulai perjalanan hidup bersama ❤️",
+                      highlight: true,
+                    },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
+                      }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm md:text-base">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
+                      >
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
+
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
             </div>
 
             {/* Ornamen Dekorasi */}
@@ -721,7 +806,11 @@ export default function Template4Gold() {
 
           {/* countdown */}
           <section className="relative py-16 px-6 max-w-2xl mx-auto">
-            <TheDate background={THEMES} theme={theme} />
+            <TheDate
+              background={THEMES}
+              theme={theme}
+              datamempelai={dataMempelai}
+            />
 
             {/* Card Acara */}
             <motion.div
@@ -747,27 +836,30 @@ export default function Template4Gold() {
                 AKAD NIKAH
               </h3>
 
-              <p className="text-gray-500 italic mb-2">Selasa</p>
+              <p className="text-gray-500 italic mb-2">
+                {akad?.dayName || "Selasa"}
+              </p>
 
               <h1
                 className={`text-5xl md:text-6xl font-bold ${THEMES[theme].textMain} leading-tight`}
               >
-                14
+                {akad?.dayNumber || "00"}
               </h1>
               <p className={`${THEMES[theme].textMain} font-medium mb-4`}>
-                Mei 2025
+                {akad
+                  ? `${akad.monthName} ${akad.year}`
+                  : "Tanggal tidak tersedia"}
               </p>
 
-              <p className="text-gray-600 mb-6">Pukul 19.00 WIB - Selesai</p>
+              <p className="text-gray-600 mb-6">
+                {" "}
+                Pukul {jamAkad} WIB - Selesai
+              </p>
 
               {/* Lokasi */}
               <h4 className={`${THEMES[theme].textMain} font-semibold`}>
-                Mesjid Baiturrahman
+                {dataMempelai?.lokasiAkad || "Lokasi belum diisi"}
               </h4>
-              <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
-                Yogyakarta
-              </p>
             </motion.div>
 
             {/* Card Resepsi */}
@@ -781,9 +873,9 @@ export default function Template4Gold() {
               {/* Icon Kalender */}
               <div className="flex justify-center mb-4">
                 <div
-                  className={`w-14 h-14 flex items-center justify-center rounded-xl ${THEMES[theme].chip} ${THEMES[theme].chip} shadow-md`}
+                  className={`w-14 h-14 flex items-center justify-center rounded-xl ${THEMES[theme].chip} shadow-md`}
                 >
-                  <CalendarDays className="w-7 h-7" /> {/* ✅ Icon Lucide */}
+                  <CalendarDays className="w-7 h-7" />
                 </div>
               </div>
 
@@ -794,26 +886,36 @@ export default function Template4Gold() {
                 RESEPSI
               </h3>
 
-              <p className="text-gray-500 italic mb-2">Selasa</p>
+              {/* Hari */}
+              <p className="text-gray-500 italic mb-2">
+                {resepsi?.dayName || "Hari belum ditentukan"}
+              </p>
 
+              {/* Tanggal */}
               <h1
                 className={`text-5xl md:text-6xl font-bold ${THEMES[theme].textMain} leading-tight`}
               >
-                14
+                {resepsi?.dayNumber || "00"}
               </h1>
+
+              {/* Bulan + Tahun */}
               <p className={`${THEMES[theme].textMain} font-medium mb-4`}>
-                Mei 2025
+                {resepsi
+                  ? `${resepsi.monthName} ${resepsi.year}`
+                  : "Tanggal belum diisi"}
               </p>
 
-              <p className="text-gray-600 mb-6">Pukul 19.00 WIB - Selesai</p>
+              {/* Jam */}
+              <p className="text-gray-600 mb-6">
+                Pukul {jamResepsi} WIB - Selesai
+              </p>
 
               {/* Lokasi */}
               <h4 className={`${THEMES[theme].textMain} font-semibold`}>
-                Mesjid Baiturrahman
+                {dataMempelai?.lokasiResepsi || "Lokasi belum diisi"}
               </h4>
               <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
-                Yogyakarta
+                {dataMempelai?.lokasiResepsi || "Alamat belum diisi"}
               </p>
             </motion.div>
           </section>
@@ -832,7 +934,10 @@ export default function Template4Gold() {
               >
                 <h4 className="font-semibold mb-2">Peta Lokasi</h4>
                 <iframe
-                  src="https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  src={
+                    dataMempelai?.linkMaps ||
+                    "https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  }
                   width="100%"
                   height="200"
                   className="border-0 rounded-md"
@@ -843,7 +948,11 @@ export default function Template4Gold() {
           </motion.section>
 
           {/* Gallery */}
-          <Gallery3 background={THEMES} theme={theme} />
+          <Gallery3
+            background={THEMES}
+            theme={theme}
+            datamempelai={dataMempelai}
+          />
 
           {/* Ucapan & Doa + Guest Book form */}
           <section
@@ -963,7 +1072,11 @@ export default function Template4Gold() {
             transition={{ duration: 0.6 }}
             className="py-10 px-4"
           >
-            <AmplopGift background={THEMES} T={theme} />
+            <AmplopGift
+              background={THEMES}
+              T={theme}
+              datamempelai={dataMempelai}
+            />
           </motion.section>
 
           {/* Footer */}
@@ -993,12 +1106,17 @@ export default function Template4Gold() {
                 className="text-pink-500 animate-pulse"
                 fill="currentColor"
               />
-              <span>Vidi & Tijani</span>
+              <span>
+                {dataMempelai?.panggilanPria || "Dandy"} &{" "}
+                {dataMempelai?.panggilanWanita || "Anna"}
+              </span>
             </div>
 
             {/* Small copyright */}
             <p className="mt-4 text-xs text-gray-400">
-              © {new Date().getFullYear()} Vidi & Tijani Wedding
+              © {new Date().getFullYear()}{" "}
+              {dataMempelai?.panggilanPria || "Dandy"} &{" "}
+              {dataMempelai?.panggilanWanita || "Anna"} Wedding
             </p>
           </motion.footer>
         </div>

@@ -3,22 +3,24 @@
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock } from "lucide-react";
 
-export default function DetailAcara({ T, background }) {
+export default function DetailAcara({ T, background, datamempelai }) {
   const events = [
     {
       type: "Akad",
-      date: "Sabtu, 25 November 2025",
-      time: "08:00 WIB",
-      location: "Masjid Al-Falah, Jakarta Selatan",
-      dressCode: "Kemeja / Baju Melayu (warna: pastel)",
+      date: datamempelai?.tanggalAkad || "Tanggal belum ditentukan",
+      time: datamempelai?.jamAkad
+        ? datamempelai.jamAkad + " WIB"
+        : "Waktu belum ditentukan",
+      location: datamempelai?.lokasiAkad || "Lokasi belum ditentukan",
       icon: <Calendar size={24} />,
     },
     {
       type: "Resepsi",
-      date: "Sabtu, 25 November 2025",
-      time: "11:00 — 14:00 WIB",
-      location: "Gedung Serbaguna — Jakarta Selatan",
-      dressCode: "Parkir tersedia di basement gedung.",
+      date: datamempelai?.tanggalResepsi || "Tanggal belum ditentukan",
+      time: datamempelai?.jamResepsi
+        ? datamempelai.jamResepsi + " WIB"
+        : "Waktu belum ditentukan",
+      location: datamempelai?.lokasiResepsi || "Lokasi belum ditentukan",
       icon: <Calendar size={24} />,
     },
   ];
@@ -72,10 +74,6 @@ export default function DetailAcara({ T, background }) {
             <p className="flex items-center justify-center gap-2 text-gray-600 text-lg">
               <MapPin size={18} /> {event.location}
             </p>
-
-            {event.dressCode && (
-              <p className="mt-2 text-gray-700 text-lg">{event.dressCode}</p>
-            )}
           </motion.div>
         ))}
       </div>

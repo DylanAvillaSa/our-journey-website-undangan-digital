@@ -1,126 +1,153 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import { HiMenu, HiX } from "react-icons/hi";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { Bell, LogIn } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { db } from "@/libs/config";
+import { onSnapshot, collection, doc, updateDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
 const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [notif, setNotif] = useState([]);
+  const [showNotif, setShowNotif] = useState(false);
+  const [user, setUser] = useState(null);
+  const notifRef = useRef(null);
 
+  const auth = getAuth();
+
+  // 🔥 Pantau user login/logout realtime
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsubAuth();
+  }, [auth]);
+
+  // 🔥 Ambil data pembelian realtime milik user
+  useEffect(() => {
+    if (!user) return;
+
+    const unsub = onSnapshot(collection(db, "pembelian"), (snapshot) => {
+      const data = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((d) => d.email === user.email); // 🔒 Hanya milik user ini
+      setNotif(data);
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  // 🔔 Klik notifikasi → langsung ke form
+  const handleNotifClick = async (n) => {
+    const docRef = doc(db, "pembelian", n.id);
+
+    // Update notif_seen biar gak muncul terus
+    if (!n.notif_seen) {
+      await updateDoc(docRef, { notif_seen: true });
+    }
+
+    if (n.link_form && n.link_form !== "undefined") {
+      router.push(`/form-pemesanan/${n.id}`);
+    } else {
+      alert("Form pemesanan belum tersedia. Coba ulangi beberapa saat lagi.");
+    }
+  };
+
+  // 🌫️ Efek shadow saat scroll
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Tutup dropdown notif saat klik di luar area
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotif(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ❌ Hide navbar di halaman tertentu
   if (
-    pathname == "/template/template-1-silver" ||
-    pathname == "/template/template-2-silver" ||
-    pathname == "/template/template-3-silver" ||
-    pathname == "/template/template-4-gold" ||
-    pathname == "/template/template-5-gold" ||
-    pathname == "/template/template-6-gold" ||
-    pathname == "/template/template-8-gold" ||
-    pathname == "/template/template-9-gold" ||
-    pathname == "/template/template-10-gold" ||
-    pathname == "/template/template-11-gold" ||
-    pathname == "/template/template-12-gold" ||
-    pathname == "/template/template-13-platinum" ||
-    pathname == "/template/template-14-platinum" ||
-    pathname == "/template/template-15-platinum" ||
-    pathname == "/template/template-16-platinum"
+    pathname.startsWith("/template/") ||
+    pathname.startsWith("/form-pemesanan/") ||
+    pathname.startsWith("/preview-undangan") ||
+    pathname.startsWith("/pembayaran") ||
+    pathname.startsWith("/template-pembeli") ||
+    pathname.startsWith("/preview-edit-template") ||
+    pathname === "/dashboard-admin" ||
+    pathname === "/dashboard-user" ||
+    pathname === "/login" ||
+    pathname === "/login-user" ||
+    pathname === "/register" ||
+    pathname === "/share-to"
   ) {
     return null;
   }
 
+  const unreadCount = notif.filter((n) => !n.notif_seen).length;
+
+  // 🔑 Logout handler
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/");
+  };
+
   return (
     <nav
-      className={`fixed w-full top-0 z-50 transition-shadow ${
+      className={`fixed w-full top-0 z-50 transition-all duration-300 ${
         scrolled ? "shadow-lg bg-white/90 backdrop-blur-md" : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center h-20">
         {/* Logo */}
         <div
-          className="flex items-center gap-2"
           onClick={() => router.push("/")}
+          className="flex items-center gap-2 cursor-pointer"
         >
           <Image
             src="/logo/logo-our-journey.png"
             alt="Logo"
             width={50}
             height={50}
+            priority
             className="w-auto h-auto"
           />
           <span className="font-bold text-xl text-gray-800">Our Journey</span>
         </div>
 
-        {/* CTA Button */}
-        <div className="hidden md:block">
-          <a
-            href="#wa"
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg transition"
-          >
-            Pesan Sekarang
-          </a>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <div className="md:hidden">
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-gray-800 text-3xl focus:outline-none"
-          >
-            {isOpen ? <HiX /> : <HiMenu />}
-          </button>
+        {/* 🔔 Notifikasi atau Login */}
+        <div className="relative flex items-center gap-4" ref={notifRef}>
+          {!user ? (
+            <button
+              onClick={() => router.push("/login-user")}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition font-semibold"
+            >
+              <LogIn size={18} />
+              Masuk
+            </button>
+          ) : (
+            <>
+              {/* Tombol logout */}
+              <button
+                onClick={handleLogout}
+                className="text-sm font-medium text-red-500 hover:text-red-600 transition"
+              >
+                Keluar
+              </button>
+            </>
+          )}
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.ul
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="md:hidden bg-white/95 backdrop-blur-md shadow-lg flex flex-col gap-6 items-center py-6 text-gray-800 font-semibold"
-          >
-            <li>
-              <a href="#hero" onClick={() => setIsOpen(false)}>
-                Home
-              </a>
-            </li>
-            <li>
-              <a href="#fitur" onClick={() => setIsOpen(false)}>
-                Fitur
-              </a>
-            </li>
-            <li>
-              <a href="#galeri" onClick={() => setIsOpen(false)}>
-                Template
-              </a>
-            </li>
-            <li>
-              <a href="#paket" onClick={() => setIsOpen(false)}>
-                Paket
-              </a>
-            </li>
-            <li>
-              <a href="#wa" onClick={() => setIsOpen(false)}>
-                Pesan WA
-              </a>
-            </li>
-          </motion.ul>
-        )}
-      </AnimatePresence>
     </nav>
   );
 };

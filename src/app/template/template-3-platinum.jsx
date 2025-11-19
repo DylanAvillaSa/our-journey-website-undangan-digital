@@ -4,8 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { MapPin, Mail, Instagram } from "lucide-react";
+import { collection, query, where, getDocs, getDoc } from "firebase/firestore";
+import { db } from "@/libs/config";
 import { CalendarDays } from "lucide-react";
 import { fonts } from "@/app/layout";
+import BottomNavigation from "@/components/ui/BottomNavigation";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const dummyData = [
@@ -66,32 +70,13 @@ export const THEMES = {
   },
 };
 
-const containerVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.4,
-      staggerChildren: 0.1,
-      ease: "easeOut",
-    },
-  },
-  exit: { opacity: 0, y: 20, scale: 0.8, transition: { duration: 0.3 } },
-};
-
-// Variants untuk tiap tombol
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.5, y: 10 },
-  visible: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.5, y: 10 },
-};
-
-export default function PlatinumTemplate15() {
+export default function PlatinumTemplate15({ id, data: datas }) {
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const [switcher, setSwitcher] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(datas || null);
   const [opened, setOpened] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("sunset");
@@ -106,7 +91,6 @@ export default function PlatinumTemplate15() {
     (d) => d.kehadiran === "tidak hadir"
   ).length;
   const [submitted, setSubmitted] = useState(false);
-
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem("msgs_v1");
@@ -115,9 +99,7 @@ export default function PlatinumTemplate15() {
       return initialMessages;
     }
   });
-
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
-
   const videoRef = useRef(null);
   const videoRef2 = useRef(null);
   const [showBackgroundVideo, setShowBackgroundVideo] = useState(false);
@@ -131,10 +113,55 @@ export default function PlatinumTemplate15() {
       logo: "/asset/platinum/tema-merak/bca.png",
     },
   ];
-
-  const TARGET_DATE = new Date("2025-12-21T10:00:00");
+  const combined = `${dataMempelai?.countdonwDate}T${dataMempelai?.countdonwTime}`;
+  const TARGET_DATE = new Date(combined || "2025-12-21T10:00:00");
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(TARGET_DATE));
   const [finished, setFinished] = useState(false);
+  const [showBingkaiNama, setShowBingkaiNama] = useState(true);
+  const [isBgVideoDone, setIsBgVideoDone] = useState(false);
+
+  // mengambil data dari database
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Platinum 3"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna || "sunset");
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // ⛔ Jangan izinkan scroll hide/show sebelum video selesai!
+      if (!isBgVideoDone) return;
+
+      if (window.scrollY > 50) {
+        setShowBingkaiNama(false);
+      } else {
+        setShowBingkaiNama(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isBgVideoDone]); // ⬅ penting, tunggu video selesai
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -157,25 +184,6 @@ export default function PlatinumTemplate15() {
   const handleVideoEnd = () => {
     // Saat video pembuka selesai, tampilkan background video
     setShowBackgroundVideo(true);
-  };
-  const canvasRef = useRef(null);
-
-  const handlePauseBeforeEnd = (e) => {
-    const video = e.target;
-    const canvas = canvasRef.current;
-
-    // kalau tinggal 0.3 detik terakhir
-    if (video.duration - video.currentTime <= 1.3) {
-      // gambar frame terakhir ke canvas
-      const ctx = canvas.getContext("2d");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // tampilkan canvas, sembunyikan video
-      video.style.display = "none";
-      canvas.classList.remove("hidden");
-    }
   };
 
   const T = THEMES[theme];
@@ -265,23 +273,12 @@ export default function PlatinumTemplate15() {
     "/images/bg-wedding.jpg",
   ]; // ganti sesuai foto pasangan lu
 
-  const [current, setCurrent] = useState(0);
-  const [currentImage, setCurrentImage] = useState(0);
-  const images2 = ["/images/tmp.jpg", "/images/bg-wedding.jpg"];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % images2.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [images2.length]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % images.length);
-    }, 5000); // ganti gambar tiap 5 detik
-    return () => clearInterval(timer);
-  }, [images.length]);
+  const scrollToSection = (id) => {
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <main
@@ -293,7 +290,7 @@ export default function PlatinumTemplate15() {
         ref={audioRef}
         // autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -375,7 +372,7 @@ export default function PlatinumTemplate15() {
               >
                 <div className="w-full h-full rounded-md overflow-hidden bg-white">
                   <Image
-                    src="/images/prewed-1.jpg"
+                    src={dataMempelai?.fotoSampul[0] || "/images/prewed-1.jpg"}
                     alt="Foto Mempelai"
                     fill
                     className="object-cover scale-105"
@@ -403,7 +400,8 @@ export default function PlatinumTemplate15() {
                 transition={{ delay: 0.6 }}
                 className="font-[var(--font-vibes)] text-5xl md:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-300 to-orange-200 drop-shadow-[0_0_25px_rgba(255,255,255,0.3)] mb-4"
               >
-                Putra & Putri
+                {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                {dataMempelai?.panggilanWanita || "Putri"}
               </motion.h1>
 
               {/* 📅 Tanggal */}
@@ -413,7 +411,7 @@ export default function PlatinumTemplate15() {
                 transition={{ delay: 0.9 }}
                 className="text-white/90 text-lg md:text-xl mb-8 font-[var(--font-playfair)]"
               >
-                12 • 12 • 2023
+                {dataMempelai?.tanggalAkad || "12 • 12 • 2023"}
               </motion.p>
 
               {/* 💌 Guest Name */}
@@ -434,7 +432,7 @@ export default function PlatinumTemplate15() {
                   }}
                   className="text-2xl font-semibold text-rose-700 bg-white/90 rounded-xl w-[240px] mx-auto py-1 shadow-md backdrop-blur-md"
                 >
-                  Nama Tamu
+                  {namaTamu || "Nama Tamu"}
                 </motion.p>
                 <p className="text-white text-sm md:text-base mt-2">
                   Di Tempat
@@ -505,47 +503,61 @@ export default function PlatinumTemplate15() {
                     autoPlay
                     muted
                     playsInline
+                    onEnded={(e) => {
+                      setIsBgVideoDone(true);
+                    }}
                     className="w-full h-full object-cover"
                   />
 
                   {/* Ornamen Background */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <img
+                  {isBgVideoDone && (
+                    <motion.img
                       src="/asset/platinum/tema-travel/latar-nama.png"
                       alt="Ornament kanan bawah"
                       className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto h-auto md:w-[500px] animate-float-slow"
+                      animate={{
+                        opacity: showBingkaiNama ? 1 : 0,
+                        scale: showBingkaiNama ? 1 : 0.95,
+                      }}
                     />
-                  </div>
+                  )}
 
                   {/* Overlay teks */}
-                  <motion.div
-                    className="absolute inset-0 w-1/2 mx-auto flex flex-col items-center justify-center text-pink-400 bottom-4"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 5, duration: 5 }}
-                  >
-                    <motion.h1
-                      className="text-sm md:text-6xl font-bold tracking-wide drop-shadow-lg"
-                      initial={{ y: 30, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 1.5, duration: 1 }}
-                    >
-                      <span className="text-pink-400 text-xl">
-                        The Wedding Of
-                      </span>
-                    </motion.h1>
 
+                  {isBgVideoDone && (
                     <motion.div
-                      className="text-2xl md:text-5xl text-pink-400 text-center mt-1 font-light flex flex-col drop-shadow-md"
-                      initial={{ y: 40, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 2, duration: 1 }}
+                      className="absolute inset-0 w-1/2 mx-auto flex flex-col items-center justify-center text-pink-400 bottom-4"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{
+                        opacity: showBingkaiNama ? 1 : 0,
+                        scale: showBingkaiNama ? 1 : 0.95,
+                        y: showBingkaiNama ? 0 : -30,
+                      }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
                     >
-                      <p>Vidi</p>
-                      <span>&</span>
-                      <p>Riffany</p>
+                      <motion.h1
+                        className="text-sm md:text-6xl font-bold tracking-wide drop-shadow-lg"
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 1.5, duration: 1 }}
+                      >
+                        <span className="text-pink-400 text-xl">
+                          The Wedding Of
+                        </span>
+                      </motion.h1>
+
+                      <motion.div
+                        className="text-2xl md:text-5xl text-pink-400 text-center mt-1 font-light flex flex-col drop-shadow-md"
+                        initial={{ y: 40, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 2, duration: 1 }}
+                      >
+                        <p>{dataMempelai?.panggilanPria || "Putra"}</p>
+                        <span>&</span>
+                        <p>{dataMempelai?.panggilanWanita || "Putri"}</p>
+                      </motion.div>
                     </motion.div>
-                  </motion.div>
+                  )}
                 </motion.div>
               )}
             </motion.div>
@@ -554,6 +566,10 @@ export default function PlatinumTemplate15() {
           {/* ======== Bagian Konten yang Bisa di Scroll ======== */}
           {showBackgroundVideo && (
             <div className="relative z-10 flex flex-col items-center justify-center text-center text-gray-800 mt-[100vh] mx-3">
+              {isBgVideoDone && (
+                <BottomNavigation onNavigate={scrollToSection} />
+              )}
+
               {/* ===== Pembukaan Surah Ar-Rum (Pink Elegant Theme) ===== */}
               <section className="relative overflow-hidden py-28 px-8 md:px-20 bg-gradient-to-b from-pink-100 via-rose-50 to-white rounded-t-[6rem]">
                 {/* Ornamen Background Lembut */}
@@ -693,22 +709,30 @@ export default function PlatinumTemplate15() {
                   >
                     <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-44 h-44 rounded-full overflow-hidden ring-4 ring-pink-300 shadow-xl">
                       <img
-                        src="/images/prewed-1.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiPria ||
+                          "/foto-dummy/pria.png"
+                        }
                         alt="Mempelai Pria"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="mt-36">
                       <h4 className="text-3xl font-semibold text-pink-700">
-                        Vidi
+                        {dataMempelai?.namaLengkapPria || "Putra"}
                       </h4>
                       <p className="text-gray-600 mt-2 italic text-sm">
-                        Putra dari Bapak Ahmad & Ibu Siti
+                        Putra dari Bapak{" "}
+                        {dataMempelai?.ayahMempelaiPria || "Ahmad"} & Ibu{" "}
+                        {dataMempelai?.ibuMempelaiPria || "Siti"}
                       </p>
 
                       {/* Instagram */}
                       <a
-                        href="https://instagram.com/vidiofficial"
+                        href={
+                          dataMempelai?.instagramPria ||
+                          "https://instagram.com/vidiofficial"
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center mt-4 text-pink-600 hover:text-pink-800 transition-colors duration-300"
@@ -756,21 +780,29 @@ export default function PlatinumTemplate15() {
                   >
                     <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-44 h-44 rounded-full overflow-hidden ring-4 ring-pink-300 shadow-xl">
                       <img
-                        src="/images/prewed-2.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiWanita ||
+                          "/foto-dummy/wanita.png"
+                        }
                         alt="Mempelai Wanita"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="mt-36">
                       <h4 className="text-3xl font-semibold text-pink-700">
-                        Riffany
+                        {dataMempelai?.namaLengkapWanita || "Putri"}
                       </h4>
                       <p className="text-gray-600 mt-2 italic text-sm">
-                        Putri dari Bapak Yusuf & Ibu Laila
+                        Putri dari Bapak{" "}
+                        {dataMempelai?.ayahMempelaiWanita || "Yusuf"} & Ibu
+                        {dataMempelai?.ibuMempelaiWanita || "Laila"}
                       </p>
 
                       <a
-                        href="https://instagram.com/riffany.official"
+                        href={
+                          dataMempelai?.instagramWanita ||
+                          "https://instagram.com/riffany.official"
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center mt-4 text-pink-600 hover:text-pink-800 transition-colors duration-300"
@@ -795,10 +827,12 @@ export default function PlatinumTemplate15() {
                   transition={{ delay: 0.6, duration: 1 }}
                 >
                   <p className="text-xl md:text-2xl text-pink-700 font-semibold mb-2">
-                    🗓️ Sabtu, 21 Desember 2025
+                    🗓️ {dataMempelai?.tanggalAkad || "Sabtu, 21 Desember 2025"}
                   </p>
                   <p className="text-lg md:text-xl text-gray-600">
-                    📍 Gedung Puri Indah Convention Hall, Jakarta
+                    📍{" "}
+                    {dataMempelai?.lokasiAkad ||
+                      "Gedung Puri Indah Convention Hall, Jakarta"}
                   </p>
                   <motion.p
                     className="mt-8 italic text-gray-500 max-w-xl mx-auto text-base"
@@ -863,7 +897,7 @@ export default function PlatinumTemplate15() {
                         className="flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur-lg shadow-lg border border-rose-200/60 hover:scale-105 transition-transform duration-300 p-6"
                       >
                         <span className="text-4xl md:text-5xl font-bold text-rose-700 drop-shadow-sm">
-                          {padNumber(item.value)}
+                          {padNumber(item.value) || 0}
                         </span>
                         <span className="text-sm mt-2 tracking-wide text-rose-600 font-medium">
                           {item.label}
@@ -893,7 +927,10 @@ export default function PlatinumTemplate15() {
               </section>
 
               {/* Akad Nikah & Resepsi - Tema Pink */}
-              <section className="relative w-full py-24 bg-gradient-to-b from-rose-50 via-pink-50 to-white overflow-hidden">
+              <section
+                id="kalender"
+                className="relative w-full py-24 bg-gradient-to-b from-rose-50 via-pink-50 to-white overflow-hidden"
+              >
                 {/* Background Glow */}
                 <div className="absolute inset-0">
                   <div className="absolute top-[10%] left-[5%] w-80 h-80 bg-rose-200/30 rounded-full blur-3xl animate-pulse" />
@@ -1078,6 +1115,7 @@ export default function PlatinumTemplate15() {
 
               {/* love story */}
               <motion.section
+                id="love"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -1085,8 +1123,8 @@ export default function PlatinumTemplate15() {
                 className="relative mt-12 py-24 bg-gradient-to-b from-pink-200 via-pink-100 to-white overflow-hidden"
               >
                 {/* Ornamen bunga pink transparan */}
-                <div className="absolute left-0 top-0 w-44 h-44 bg-[url('/asset/platinum/tema-bunga/bunga-pink.png')] bg-no-repeat bg-contain opacity-20 animate-pulse"></div>
-                <div className="absolute right-0 bottom-0 w-44 h-44 bg-[url('/asset/platinum/tema-bunga/bunga-pink.png')] bg-no-repeat bg-contain opacity-20 rotate-180 animate-pulse"></div>
+                <div className="absolute left-0 top-0 w-44 h-44 bg-no-repeat bg-contain opacity-20 animate-pulse"></div>
+                <div className="absolute right-0 bottom-0 w-44 h-44  bg-no-repeat bg-contain opacity-20 rotate-180 animate-pulse"></div>
 
                 <h2 className="text-4xl font-extrabold text-pink-700 text-center mb-6 tracking-wide">
                   Our Love Story
@@ -1112,12 +1150,15 @@ export default function PlatinumTemplate15() {
                       Awal Pertemuan
                     </h3>
                     <p className="text-pink-700 mt-3">
-                      Tak ada yang kebetulan dalam rencana Tuhan. Di antara
+                      {dataMempelai?.loveStory[0].text ||
+                        `Tak ada yang kebetulan dalam rencana Tuhan. Di antara
                       banyak wajah, kami dipertemukan dengan cara yang tak
                       disangka. Satu senyum, satu sapaan, menjadi awal dari
-                      kisah yang perlahan tumbuh menjadi cinta.
+                      kisah yang perlahan tumbuh menjadi cinta.`}
                     </p>
-                    <p className="mt-4 text-sm text-pink-500 italic">2019</p>
+                    <p className="mt-4 text-sm text-pink-500 italic">
+                      {dataMempelai?.loveStory[0].when || "2019"}
+                    </p>
                   </motion.div>
 
                   {/* Step 2 */}
@@ -1133,12 +1174,15 @@ export default function PlatinumTemplate15() {
                       Tumbuh Dalam Doa
                     </h3>
                     <p className="text-pink-700 mt-3">
-                      Dalam perjalanan waktu, kami belajar tentang kesabaran dan
+                      {dataMempelai?.loveStory[1].text ||
+                        `Dalam perjalanan waktu, kami belajar tentang kesabaran dan
                       arti saling memahami. Kami berdoa di waktu yang sama,
                       meniti langkah bersama, hingga akhirnya yakin bahwa takdir
-                      memang telah menulis nama kami berdampingan.
+                      memang telah menulis nama kami berdampingan.`}
                     </p>
-                    <p className="mt-4 text-sm text-pink-500 italic">2021</p>
+                    <p className="mt-4 text-sm text-pink-500 italic">
+                      {dataMempelai?.loveStory[1].when || "2021"}
+                    </p>
                   </motion.div>
 
                   {/* Step 3 */}
@@ -1154,12 +1198,15 @@ export default function PlatinumTemplate15() {
                       Menuju Satu Ikatan
                     </h3>
                     <p className="text-pink-700 mt-3">
-                      Di bawah cahaya cinta dan restu keluarga, kami
+                      {dataMempelai?.loveStory[2].text ||
+                        `Di bawah cahaya cinta dan restu keluarga, kami
                       mengikrarkan janji untuk berjalan seirama menuju kehidupan
                       baru. Cinta kami kini bukan hanya tentang dua hati, tapi
-                      satu takdir yang menyatu selamanya.
+                      satu takdir yang menyatu selamanya.`}
                     </p>
-                    <p className="mt-4 text-sm text-pink-500 italic">2025</p>
+                    <p className="mt-4 text-sm text-pink-500 italic">
+                      {dataMempelai?.loveStory[2].when || "2025"}
+                    </p>
                   </motion.div>
                 </div>
 
@@ -1175,6 +1222,7 @@ export default function PlatinumTemplate15() {
 
               {/* Galeri Foto */}
               <motion.section
+                id="galeri"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -1210,9 +1258,10 @@ export default function PlatinumTemplate15() {
                     }}
                   >
                     {[
-                      "/images/prewed-1.jpg",
-                      "/images/prewed-2.jpg",
-                      "/images/bg-wedding.jpg",
+                      dataMempelai?.gallery[0] || "/foto-dummy/slider1.avif",
+                      dataMempelai?.gallery[1] || "/foto-dummy/slider2.jpeg",
+                      dataMempelai?.gallery[2] || "/foto-dummy/slider3.avif",
+                      dataMempelai?.gallery[3] || "/foto-dummy/slider4.jpg",
                     ].map((src, i) => (
                       <div key={i} className="w-full flex-shrink-0">
                         <img
@@ -1230,37 +1279,57 @@ export default function PlatinumTemplate15() {
 
                 {/* Galeri Grid */}
                 <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {[
-                    "/images/prewed-1.jpg",
-                    "/images/prewed-2.jpg",
-                    "/images/tmp.jpg",
-                    "/images/bg-wedding.jpg",
-                    "/images/bg.jpg",
-                    "/images/prewed-3.jpg",
-                    "/images/prewed-4.jpg",
-                    "/images/prewed-5.jpg",
-                  ].map((src, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
-                      onClick={() => setSelectedImage(src)}
-                    >
-                      <img
-                        src={src}
-                        alt={`Foto ${i + 1}`}
-                        className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
-                      />
-                      {/* Overlay hover */}
-                      <div className="absolute inset-0 bg-pink-500/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
-                        <span className="text-white text-sm md:text-base font-medium tracking-wide">
-                          Klik untuk melihat 💖
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {dataMempelai?.gallery.length > 0
+                    ? dataMempelai?.gallery.map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-pink-500/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat 💖
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))
+                    : [
+                        "/images/prewed-1.jpg",
+                        "/images/prewed-2.jpg",
+                        "/images/tmp.jpg",
+                        "/images/bg-wedding.jpg",
+                        "/images/bg.jpg",
+                      ].map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-pink-500/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat 💖
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
                 </div>
 
                 {/* Lightbox Modal */}
@@ -1406,6 +1475,7 @@ export default function PlatinumTemplate15() {
 
               {/* Form RSVP */}
               <motion.form
+                id="rsvp"
                 onSubmit={handleSubmit}
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1600,7 +1670,7 @@ export default function PlatinumTemplate15() {
                         className="bg-white/90 backdrop-blur-sm shadow-md rounded-3xl p-6 border border-pink-100 text-left relative hover:shadow-lg transition-all"
                       >
                         {/* Ornamen bunga kecil */}
-                        <div className="absolute top-4 right-4 w-6 h-6 bg-[url('/asset/platinum/tema-bunga/mini-floral.png')] bg-contain bg-no-repeat opacity-40"></div>
+                        <div className="absolute top-4 right-4 w-6 h-6 bg-contain bg-no-repeat opacity-40"></div>
 
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-lg font-semibold text-pink-800">
@@ -1643,6 +1713,14 @@ export default function PlatinumTemplate15() {
                 viewport={{ once: true }}
                 className="relative py-24 mt-16 bg-gradient-to-b from-pink-50 via-white to-pink-100 overflow-hidden text-center"
               >
+                {/* foto penutup */}
+                <motion.img
+                  src={dataMempelai?.fotoSampul[0] || "/aset-foto/sampul.webp"}
+                  loading="lazy"
+                  alt="Bunga Pembuka"
+                  className=" w-[200px] mx-auto border-4 border-[#a38751]  h-[270px] object-cover rounded-4xl"
+                />
+
                 {/* Ucapan Terima Kasih */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -1672,7 +1750,9 @@ export default function PlatinumTemplate15() {
                   {/* Nama Pasangan */}
                   <div className="flex flex-col items-center space-y-4">
                     <h3 className="text-3xl md:text-4xl font-bold text-gray-800 font-playfair tracking-wide">
-                      Aulia <span className="text-pink-400">&</span> Rafi
+                      {dataMempelai?.panggilanPria || "Putra"}{" "}
+                      <span className="text-pink-400">&</span>{" "}
+                      {dataMempelai?.panggilanWanita || "Putri"}
                     </h3>
                     <motion.div
                       initial={{ scale: 0 }}
@@ -1684,21 +1764,11 @@ export default function PlatinumTemplate15() {
                       }}
                       className="w-20 h-0.5 bg-pink-400 rounded-full shadow-md"
                     />
-                    <p className="text-gray-500 text-lg">21 Desember 2025</p>
+                    <p className="text-gray-500 text-lg">
+                      {dataMempelai?.tanggalAkad || "21 Desember 2025"}
+                    </p>
                   </div>
                 </motion.div>
-
-                {/* Ornamen bawah */}
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-bawah.png"
-                  alt="ornament bawah kiri"
-                  className="absolute bottom-0 left-0 w-48 opacity-50 animate-pulse"
-                />
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-bawah.png"
-                  alt="ornament bawah kanan"
-                  className="absolute bottom-0 right-0 w-48 opacity-50 animate-pulse rotate-180"
-                />
 
                 {/* Footer */}
                 <footer className="mt-16 text-sm text-pink-400">

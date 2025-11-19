@@ -8,7 +8,7 @@ import {
 import Image from "next/image";
 import { useRef } from "react";
 
-export default function Parralax({ images, currentImage }) {
+export default function Parralax({ images, currentImage, datamempelai }) {
   const containerRef = useRef(null);
 
   // Scroll progress
@@ -70,16 +70,17 @@ export default function Parralax({ images, currentImage }) {
           transition={{ duration: 1 }}
           className="font-[GreatVibes] text-5xl md:text-7xl drop-shadow-lg"
         >
-          Putra & Putri
+          {datamempelai?.panggilanPria || "Putra"} &{" "}
+          {datamempelai?.panggilanWanita || "Putri"}
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2 }}
-          className="mt-6 text-sm md:text-lg tracking-wide"
+          className="mt-6 text-lg md:text-lg tracking-wide"
         >
-          Senin, 12 Mei 2025
+          {datamempelai?.tanggalAkad || "Senin, 12 Mei 2025"}
         </motion.p>
       </motion.div>
     </div>

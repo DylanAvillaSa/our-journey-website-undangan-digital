@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-export default function Gallery3({ background, theme }) {
-  const photos = [
+export default function Gallery3({ background, theme, datamempelai }) {
+  const photos = datamempelai?.gallery || [
     "/foto-dummy/slider1.avif",
     "/foto-dummy/slider2.jpeg",
     "/foto-dummy/slider3.avif",

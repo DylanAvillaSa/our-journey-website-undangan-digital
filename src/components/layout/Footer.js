@@ -5,21 +5,17 @@ const Footer = () => {
   const pathname = usePathname();
 
   if (
-    pathname == "/template/template-1-silver" ||
-    pathname == "/template/template-2-silver" ||
-    pathname == "/template/template-3-silver" ||
-    pathname == "/template/template-4-gold" ||
-    pathname == "/template/template-5-gold" ||
-    pathname == "/template/template-6-gold" ||
-    pathname == "/template/template-8-gold" ||
-    pathname == "/template/template-9-gold" ||
-    pathname == "/template/template-10-gold" ||
-    pathname == "/template/template-11-gold" ||
-    pathname == "/template/template-12-gold" ||
-    pathname == "/template/template-13-platinum" ||
-    pathname == "/template/template-14-platinum" ||
-    pathname == "/template/template-15-platinum" ||
-    pathname == "/template/template-16-platinum"
+    pathname.startsWith("/template/") ||
+    pathname.startsWith("/form-pemesanan/") ||
+    pathname.startsWith("/template-pembeli") ||
+    pathname === "/dashboard-admin" ||
+    pathname === "/dashboard-user" ||
+    pathname.startsWith("/preview-edit-template") ||
+    pathname === "/share-to" ||
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/preview-undangan") ||
+    pathname.startsWith("/pembayaran")
   ) {
     return null;
   }

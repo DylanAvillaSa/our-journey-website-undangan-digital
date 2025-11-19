@@ -4,21 +4,15 @@ import { motion } from "framer-motion";
 import { Copy, Gift, Wallet } from "lucide-react";
 import { useState } from "react";
 
-export default function AmplopGift({ T, background }) {
+export default function AmplopGift({ T, background, datamempelai }) {
   const [copied, setCopied] = useState(null);
 
   const accounts = [
     {
-      owner: "Vidi",
-      bank: "BCA",
-      number: "1234 5678 9012",
+      owner: datamempelai?.namaLengkapPria || "Hamzah",
+      bank: datamempelai?.jenisRekening || "BCA",
+      number: datamempelai?.nomorRekening || "01413456",
       color: "from-blue-500 to-blue-300", // BCA nuansa biru
-    },
-    {
-      owner: "Riffany",
-      bank: "Mandiri",
-      number: "9876 5432 1011",
-      color: "from-blue-500 to-orange-300", // Mandiri nuansa emas
     },
   ];
 

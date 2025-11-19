@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-export default function ProfilMempelai({ T, background }) {
+export default function ProfilMempelai({ T, background, datamempelai }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 50 }}
@@ -53,7 +53,7 @@ export default function ProfilMempelai({ T, background }) {
         >
           <div className="relative w-[200px] h-[200px] mx-auto mb-6">
             <Image
-              src="/foto-dummy/pria.png"
+              src={datamempelai?.fotoMempelaiPria[0] || "/foto-dummy/pria.png"}
               alt="Groom"
               fill
               className={`rounded-full object-cover shadow-lg border-4 ${background[T].border} hover:scale-105 transition-transform duration-500`}
@@ -62,11 +62,18 @@ export default function ProfilMempelai({ T, background }) {
               className={`absolute inset-0 rounded-full border-2 ${background[T].border} animate-pulse`}
             ></div>
           </div>
-          <h4 className="font-[--greatVibes] text-4xl text-pink-600">Vidi</h4>
+          <h4 className="font-[--greatVibes] text-4xl text-pink-600">
+            {datamempelai?.namaLengkapPria}
+          </h4>
           <p className="font-serif text-gray-700 mt-3 text-sm md:text-base leading-relaxed">
             Putra kedua dari <br />
-            <span className="font-semibold">Bapak X</span> &{" "}
-            <span className="font-semibold">Ibu Y</span>
+            <span className="font-semibold">
+              Bapak {datamempelai?.ayahMempelaiPria}
+            </span>{" "}
+            &{" "}
+            <span className="font-semibold">
+              Ibu {datamempelai?.ibuMempelaiPria}
+            </span>
           </p>
         </motion.div>
 
@@ -97,7 +104,9 @@ export default function ProfilMempelai({ T, background }) {
         >
           <div className="relative w-[200px] h-[200px] mx-auto mb-6">
             <Image
-              src="/foto-dummy/wanita.png"
+              src={
+                datamempelai?.fotoMempelaiWanita[0] || "/foto-dummy/wanita.png"
+              }
               alt="Bride"
               fill
               className={`rounded-full object-cover shadow-lg border-4 ${background[T].border} hover:scale-105 transition-transform duration-500`}
@@ -107,12 +116,17 @@ export default function ProfilMempelai({ T, background }) {
             ></div>
           </div>
           <h4 className="font-[--greatVibes] text-4xl text-amber-600">
-            Riffany
+            {datamempelai?.namaLengkapWanita}
           </h4>
           <p className="font-serif text-gray-700 mt-3 text-sm md:text-base leading-relaxed">
             Putri ketiga dari <br />
-            <span className="font-semibold">Bapak A</span> &{" "}
-            <span className="font-semibold">Ibu B</span>
+            <span className="font-semibold">
+              Bapak {datamempelai?.ayahMempelaiWanita}
+            </span>{" "}
+            &{" "}
+            <span className="font-semibold">
+              Ibu {datamempelai?.ibuMempelaiWanita}
+            </span>
           </p>
         </motion.div>
       </motion.div>

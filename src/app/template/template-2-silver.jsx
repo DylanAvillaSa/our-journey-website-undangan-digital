@@ -2,34 +2,72 @@
 
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import Image from "next/image";
 import CountdownSection from "@/components/paket/silver/template1/CountdownSection";
+import { useSearchParams } from "next/navigation";
 
-const messages = [
-  {
-    name: "Andi",
-    time: "2025-08-09 16:17:53",
-    message: "Selamat menempuh hidup baru 💙",
-  },
-  {
-    name: "Siti",
-    time: "2025-08-09 18:05:22",
-    message: "Barakallah, semoga sakinah mawaddah warahmah 🤍",
-  },
-];
-
-export default function Template2Silver() {
+export default function Template2Silver({ id, data }) {
   const rsvpRef = useRef(null);
-  const [dataMempelai, setDataMempelai] = useState(null);
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
+  const [dataMempelai, setDataMempelai] = useState(data || null);
+  const [kehadiran, setKehadiran] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [formDataTamu, setFormDataTamu] = useState({
+    nama_tamu_undangan: "",
+    kehadiran: "",
+  });
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
   const [opened, setOpened] = useState(false);
 
+  const handleOpen = () => {
+    setOpened(true);
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    }, 1000);
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  // ambil data dari firestore
   useEffect(() => {
-    const getData = async () => {
-      const res = await fetch("/data/data.json");
-      const data = await res.json();
-      setDataMempelai(data.find((d) => d.template === "Silver"));
+    const fetchData = async () => {
+      try {
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Silver 2"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
     };
-    getData();
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -40,21 +78,28 @@ export default function Template2Silver() {
     }
   }, [opened]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormDataTamu({ ...formDataTamu, [name]: value });
+  };
+
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center text-center bg-[#F4F7FB] text-[#1E2A5E] relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center text-center bg-[#EAF4FB] text-[#1E3A8A] relative overflow-hidden scroll-smooth"
       style={{ fontFamily: "'Playfair Display', serif" }}
     >
-      {/* WELCOME */}
+      {/* Welcome Screen */}
       {!opened && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
-          className="z-10 bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-lg max-w-md border border-blue-100"
+          className={`z-10 bg-[#EAF4FB]/90 backdrop-blur-md p-6 rounded-lg shadow-lg ${
+            kehadiran && "hidden"
+          }`}
         >
-          <p className="text-sm mb-3 text-[#415A77]">We Invite You To</p>
-          <div className="rounded-full overflow-hidden border-4 border-[#1E2A5E] w-40 h-40 mx-auto mb-4">
+          <p className="text-sm mb-4">We Invite You To</p>
+          <div className="rounded-full overflow-hidden border-4 border-[#93C5FD] w-40 h-40 mx-auto mb-4">
             <Image
               src="/foto-dummy/pembuka.jpg"
               width={160}
@@ -63,210 +108,260 @@ export default function Template2Silver() {
               alt="pasangan"
             />
           </div>
-          <h1 className="text-3xl font-bold mb-2 text-[#1E2A5E]">
-            {dataMempelai?.nama_mempelai_pria} &{" "}
-            {dataMempelai?.nama_mempelai_wanita}
+
+          <h1 className="text-3xl font-bold mb-2 text-[#2563EB]">
+            {dataMempelai?.namaLengkapPria} & {dataMempelai?.namaLengkapWanita}
           </h1>
-          <p className="text-sm text-[#415A77] mb-2">
-            Dengan penuh rasa syukur, kami mengundang Anda untuk hadir di hari
-            bahagia kami.
+          <p className="text-sm text-[#1D4ED8]">
+            Tanpa Mengurangi Rasa Hormat, Kami Mengundang Bapak/Ibu/Saudara/i
+            untuk Hadir di Acara Kami.
+          </p>
+          <p className="mt-2 text-[#1E3A8A] font-semibold">
+            Kepada {namaTamu || "Nama Tamu"}
           </p>
           <motion.button
-            onClick={() => setOpened(true)}
+            onClick={handleOpen}
             whileTap={{ scale: 0.95 }}
             whileHover={{ scale: 1.05 }}
-            className="mt-3 bg-[#1E2A5E] text-white py-2 px-6 rounded-full shadow hover:bg-[#14213D]"
+            className="mt-4 bg-[#3B82F6] hover:bg-[#2563EB] text-white py-2 px-4 rounded-full shadow"
           >
             Buka Undangan
           </motion.button>
         </motion.div>
       )}
 
-      {/* ISI UNDANGAN */}
       {opened && (
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
-          className="w-full flex flex-col items-center mt-10"
+          className="text-center p-4 bg-[#EAF4FB] min-h-screen relative text-[#1E3A8A] mt-24"
         >
-          {/* Pembuka */}
-          <section className="max-w-xl text-center px-6">
-            <Image
-              src="/foto-dummy/pembuka.jpg"
-              width={160}
-              height={160}
-              alt="Foto Mempelai"
-              className="mx-auto rounded-full border-4 border-[#1E2A5E]"
-            />
-            <h2 className="mt-4 text-3xl font-semibold text-[#1E2A5E]">
-              {dataMempelai?.nama_mempelai_pria} &{" "}
-              {dataMempelai?.nama_mempelai_wanita}
-            </h2>
-            <p className="mt-3 text-sm text-[#415A77] italic">
-              “Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan
-              untukmu pasangan hidup dari jenismu sendiri...”
+          {/* 🎵 Audio Button */}
+          {opened && (
+            <div className="fixed bottom-6 right-6 z-50">
+              <button
+                onClick={toggleAudio}
+                className="bg-[#3B82F6] hover:bg-[#2563EB] text-white p-4 rounded-full shadow-lg transition transform hover:scale-105 focus:outline-none"
+              >
+                {isPlaying ? "⏸️" : "🎵"}
+              </button>
+            </div>
+          )}
+
+          <Image
+            src="/asset/florar.png"
+            alt="flower deco"
+            width={120}
+            height={120}
+            className="absolute top-0 left-0 w-40 md:w-60 rotate-[-20deg]"
+          />
+
+          <Image
+            src="/foto-dummy/pembuka.jpg"
+            width={160}
+            height={160}
+            alt="Foto Mempelai"
+            className="mx-auto w-40 h-40 rounded-full border-4 border-[#93C5FD] object-cover"
+          />
+
+          <h2 className="mt-4 text-3xl font-cursive text-[#2563EB]">
+            The Wedding of {dataMempelai?.panggilanPria} &{" "}
+            {dataMempelai?.panggilanWanita}
+          </h2>
+
+          <p className="mt-4 text-sm text-[#1E40AF]">
+            وَمِنْ اٰيٰتِهٖٓ اَنْ خَلَقَ لَكُمْ ...
+          </p>
+
+          <h2 className="mt-4 text-[#2563EB]">- Ar-Rum Ayat 21 -</h2>
+
+          <CountdownSection
+            date={`${dataMempelai?.countdownDate}T${dataMempelai?.countdownTime}`}
+          />
+
+          {/* Kedua mempelai */}
+          <section className="bg-[#DBEAFE] mt-10 flex flex-col items-center text-center px-4 pb-20 pt-10 relative">
+            <p className="text-[#1E3A8A] text-xl md:text-2xl font-arabic mt-8">
+              ٱلسَّلَامُ عَلَيْكُمْ وَرَحْمَةُ ٱللّٰهِ وَبَرَكَاتُهُ
             </p>
-            <h3 className="mt-2 text-sm text-[#1E2A5E]">– Ar-Rum 21 –</h3>
+
+            <p className="text-[#1E40AF] max-w-xl mt-4 leading-relaxed text-sm md:text-base">
+              Atas Berkah dan Rahmat Allah Subhanallahu Wa Ta'ala...
+            </p>
+
+            <div className="rounded-full border-4 border-[#93C5FD] w-52 h-52 mx-auto overflow-hidden mt-6">
+              <img
+                src="/foto-dummy/pria.png"
+                alt="Groom"
+                className="object-cover w-full h-full"
+              />
+            </div>
+
+            <h2 className="text-[#2563EB] text-2xl font-semibold mt-6">
+              {dataMempelai?.namaLengkapPria}
+            </h2>
+            <p className="text-[#1E40AF] text-sm mt-2">
+              Anak Pertama dari Bapak{" "}
+              {dataMempelai?.ayahMempelaiPria || "Samsuri"} dan Ibu{" "}
+              {dataMempelai?.ibuMempelaiPria || "Santi"}
+            </p>
+
+            <h2 className="text-5xl text-[#1E3A8A] my-12">&</h2>
+
+            <div className="rounded-full border-4 border-[#93C5FD] w-52 h-52 mx-auto overflow-hidden">
+              <img
+                src="/foto-dummy/wanita.png"
+                alt="Bride"
+                className="object-cover w-full h-full"
+              />
+            </div>
+
+            <h2 className="text-[#2563EB] text-2xl font-semibold mt-6">
+              {dataMempelai?.namaLengkapWanita || "Fitri Ai"}
+            </h2>
+            <p className="text-[#1E40AF] text-sm mt-2">
+              Anak Kedua dari Pasangan{" "}
+              {dataMempelai?.ayahMempelaiWanita || "Samsul"} dan Ibu{" "}
+              {dataMempelai?.ibuMempelaiWanita || "Fitri"}
+            </p>
           </section>
 
-          {/* Countdown */}
-          <CountdownSection />
-
-          {/* Mempelai */}
-          <section className="mt-12 w-full bg-white py-10 px-6 rounded-3xl shadow-lg max-w-2xl">
-            <h3 className="text-2xl font-semibold mb-8 text-[#1E2A5E]">
-              Pasangan Bahagia
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* Pria */}
-              <div>
+          {/* akad */}
+          <section className="flex flex-col items-center text-center mt-8">
+            {/* Bagian Foto + Wave */}
+            <div className="relative w-full max-w-xl overflow-hidden">
+              {/* Foto */}
+              <div className="relative w-full h-80 md:h-96">
                 <Image
-                  src="/foto-dummy/pria.png"
-                  width={160}
-                  height={160}
-                  alt="Groom"
-                  className="mx-auto rounded-full border-4 border-[#1E2A5E]"
+                  src="/foto-dummy/latar.jpg"
+                  alt="family"
+                  fill
+                  className="object-cover rounded-xl"
                 />
-                <h4 className="mt-3 text-xl text-[#1E2A5E]">
-                  {dataMempelai?.nama_mempelai_pria}
-                </h4>
-                <p className="text-sm text-[#415A77]">
-                  Putra dari Bapak A & Ibu B
-                </p>
+                {/* Overlay warna biru */}
+                <div className="absolute inset-0 bg-[#2563EB]/35 mix-blend-multiply z-10" />
+                {/* Text Save The Date */}
+                <h2 className="absolute inset-0 z-20 flex items-center justify-center text-white text-3xl md:text-4xl font-[GreatVibes] drop-shadow-lg">
+                  Save The Date
+                </h2>
               </div>
+            </div>
 
-              {/* Wanita */}
-              <div>
-                <Image
-                  src="/foto-dummy/wanita.png"
-                  width={160}
-                  height={160}
-                  alt="Bride"
-                  className="mx-auto rounded-full border-4 border-[#1E2A5E]"
-                />
-                <h4 className="mt-3 text-xl text-[#1E2A5E]">
-                  {dataMempelai?.nama_mempelai_wanita}
-                </h4>
-                <p className="text-sm text-[#415A77]">
-                  Putri dari Bapak C & Ibu D
+            {/* Card Info */}
+            <div className="relative w-[90%] max-w-md -mt-12 z-40">
+              <div className="bg-white/95 backdrop-blur-md rounded-3xl px-6 py-6 border-[3px] border-dashed border-white shadow-[0_25px_40px_rgba(0,0,0,0.25)]">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900">
+                  {dataMempelai?.tanggalAkad || "Belum ada tanggal"}
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Pukul {dataMempelai?.jamAkad || "Belum ada jam"}
+                </p>
+                <p className="text-sm text-gray-700 mt-3">
+                  {dataMempelai?.lokasiAkad || "Alamat belum tersedia"}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* Lokasi Acara */}
-          <section className="mt-16 max-w-2xl text-center">
-            <h3 className="text-2xl font-semibold text-[#1E2A5E] mb-4">
-              Akad Nikah
-            </h3>
-            <p className="text-[#415A77] text-sm">
-              Jumat, 15 Agustus 2025 • 09.00 WIB
-            </p>
-            <p className="text-[#415A77] text-sm mt-1">
-              Masjid Al-Ikhlas, Jakarta Selatan
-            </p>
+          {/* Lokasi Akad */}
+          <section className="mt-16">
+            <h2 className="text-3xl font-[GreatVibes] text-[#2563EB] mb-6">
+              Lokasi Akad & Resepsi
+            </h2>
 
-            <h3 className="text-2xl font-semibold text-[#1E2A5E] mt-10 mb-4">
-              Resepsi
-            </h3>
-            <p className="text-[#415A77] text-sm">
-              Sabtu, 16 Agustus 2025 • 19.00 WIB
-            </p>
-            <p className="text-[#415A77] text-sm">
-              Gedung Balai Kartini, Jakarta
-            </p>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-[#93C5FD]">
+                <h3 className="text-xl font-semibold text-[#1E3A8A] mb-2">
+                  Akad Nikah
+                </h3>
+                <a
+                  href={dataMempelai?.linkMaps}
+                  target="_blank"
+                  className="inline-block mt-3 text-sm text-white bg-[#3B82F6] px-4 py-2 rounded-full hover:bg-[#2563EB] transition"
+                >
+                  Lihat Lokasi
+                </a>
+              </div>
 
-            <div className="mt-6">
-              <a
-                href={dataMempelai?.link_maps}
-                target="_blank"
-                className="bg-[#1E2A5E] text-white py-2 px-5 rounded-full shadow hover:bg-[#14213D]"
-              >
-                Lihat Lokasi
-              </a>
+              <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-[#93C5FD]">
+                <h3 className="text-xl font-semibold text-[#1E3A8A] mb-2">
+                  Resepsi
+                </h3>
+                <a
+                  href={dataMempelai?.linkMapsResepsi}
+                  target="_blank"
+                  className="inline-block mt-3 text-sm text-white bg-[#3B82F6] px-4 py-2 rounded-full hover:bg-[#2563EB] transition"
+                >
+                  Lihat Lokasi
+                </a>
+              </div>
             </div>
           </section>
 
           {/* Amplop Digital */}
-          <section className="mt-16 max-w-md w-full text-center bg-white/90 rounded-3xl border border-blue-100 p-6 shadow">
-            <h3 className="text-2xl font-semibold text-[#1E2A5E] mb-4">
+          <section className="mt-20 bg-[#DBEAFE] py-10 px-6 rounded-2xl border border-[#93C5FD] max-w-3xl mx-auto">
+            <h2 className="text-3xl font-[GreatVibes] text-[#2563EB] mb-6">
               Amplop Digital
-            </h3>
-            <p className="text-[#415A77] text-sm mb-4">
-              Kirim hadiah atau doa tulus Anda melalui rekening berikut:
-            </p>
-            <div className="bg-[#F4F7FB] p-4 rounded-lg shadow-sm text-sm">
-              <p>BANK BCA</p>
-              <p className="font-semibold text-[#1E2A5E]">
-                1234567890 - {dataMempelai?.nama_mempelai_pria}
-              </p>
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6 mt-4">
+              <div className="bg-white rounded-xl border border-[#93C5FD] shadow-md p-4">
+                <h3 className="font-semibold text-[#1E3A8A]">
+                  {dataMempelai?.jenisRekening || "BNI"}
+                </h3>
+                <p className="text-sm">
+                  No. Rekening: {dataMempelai?.nomorRekening || "1234567890"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  a.n. {dataMempelai?.namaLengkapPria}
+                </p>
+                <button className="mt-3 px-4 py-2 text-sm bg-[#3B82F6] text-white rounded-full hover:bg-[#2563EB]">
+                  Salin Nomor
+                </button>
+              </div>
             </div>
           </section>
 
-          {/* RSVP */}
-          <section
-            ref={rsvpRef}
-            className="mt-16 w-full max-w-md bg-white rounded-2xl shadow-lg p-6 border border-blue-100"
-          >
-            <h3 className="text-2xl font-semibold text-[#1E2A5E] mb-4">
-              Kehadiran
-            </h3>
-            <form className="space-y-4">
-              <input
-                type="text"
-                placeholder="Nama Anda"
-                className="w-full border rounded-lg px-3 py-2"
-              />
-              <textarea
-                placeholder="Tulis ucapan untuk mempelai"
-                rows="3"
-                className="w-full border rounded-lg px-3 py-2"
-              ></textarea>
-              <select className="w-full border rounded-lg px-3 py-2">
-                <option value="">Pilih Kehadiran</option>
-                <option value="hadir">Hadir</option>
-                <option value="tidak">Tidak Hadir</option>
-              </select>
-              <button
-                type="submit"
-                className="w-full bg-[#1E2A5E] text-white py-2 rounded-lg hover:bg-[#14213D]"
-              >
-                Kirim
-              </button>
-            </form>
-          </section>
-
-          {/* Ucapan Tamu */}
-          <section className="mt-12 w-full max-w-md bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-2xl font-semibold text-[#1E2A5E] mb-4">
-              Ucapan Tamu
-            </h3>
-            <div className="space-y-4 max-h-64 overflow-y-auto">
-              {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className="bg-[#F4F7FB] p-4 rounded-xl border border-blue-100"
-                >
-                  <p className="font-semibold text-[#1E2A5E]">{m.name}</p>
-                  <p className="text-xs text-[#415A77]">{m.time}</p>
-                  <p className="mt-1 text-[#415A77]">{m.message}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Penutup */}
-          <section className="mt-16 mb-10 text-[#415A77] max-w-xl text-center">
+          {/* ucapan terimakasih */}
+          <section className="mt-16">
             <p>
-              Merupakan kehormatan bagi kami sekeluarga apabila
-              Bapak/Ibu/Saudara/i berkenan hadir dan memberi doa restu.
+              Merupakan suatu kehormatan dan kebahagiaan bagi kami sekeluarga,
+              apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa
+              restu. Atas kehadiran dan doa restunya, kami mengucapkan terima
+              kasih.
             </p>
-            <p className="mt-4 font-semibold">
-              {dataMempelai?.nama_mempelai_pria} &{" "}
-              {dataMempelai?.nama_mempelai_wanita}
-            </p>
+          </section>
+
+          {/* Form RSVP */}
+          <section className="py-10 px-4 bg-cover bg-center">
+            <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-[#93C5FD]">
+              <h1 className="text-center text-3xl font-[GreatVibes] text-[#2563EB] mb-6">
+                Kehadiran
+              </h1>
+              <form className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Masukkan nama"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#2563EB]"
+                />
+                <textarea
+                  placeholder="Tulis ucapan untuk mempelai"
+                  rows="4"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#2563EB]"
+                ></textarea>
+                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-[#2563EB]">
+                  <option value="">Pilih opsi</option>
+                  <option value="hadir">Hadir</option>
+                  <option value="tidak">Tidak Hadir</option>
+                </select>
+                <button
+                  type="submit"
+                  className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white py-2 rounded-lg transition duration-300"
+                >
+                  Kirim
+                </button>
+              </form>
+            </div>
           </section>
         </motion.div>
       )}

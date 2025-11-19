@@ -3,22 +3,21 @@
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock } from "lucide-react";
 
-export default function DetailAcara2({ T, background }) {
+export default function DetailAcara2({ T, background, datamempelai }) {
   const events = [
     {
       type: "Akad",
-      date: "Sabtu, 25 November 2025",
-      time: "08:00 WIB",
-      location: "Masjid Al-Falah, Jakarta Selatan",
-      dressCode: "Kemeja / Baju Melayu (warna pastel)",
+      date: datamempelai?.tanggalAkad || "Sabtu, 25 November 2025",
+      time: datamempelai?.jamAkad || "08:00 WIB",
+      location: datamempelai?.lokasiAkad || "Masjid Al-Falah, Jakarta Selatan",
       icon: <Calendar size={28} />,
     },
     {
       type: "Resepsi",
-      date: "Sabtu, 25 November 2025",
-      time: "11:00 — 14:00 WIB",
-      location: "Gedung Serbaguna — Jakarta Selatan",
-      dressCode: "Parkir tersedia di basement gedung",
+      date: datamempelai?.tanggalResepsi || "Sabtu, 27 November 2025",
+      time: datamempelai?.jamResepsi || "10:00 WIB",
+      location:
+        datamempelai?.lokasiResepsi || "Masjid Al-Falah, Jakarta Selatan",
       icon: <Calendar size={28} />,
     },
   ];

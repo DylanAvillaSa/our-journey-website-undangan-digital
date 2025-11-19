@@ -6,9 +6,7 @@ import { Dialog } from "@headlessui/react";
 import HeroSection from "@/components/ui/section/HeroSection";
 import FiturSection from "@/components/ui/section/FiturSection";
 import GaleriTemplateSection from "@/components/ui/section/GaleriSection";
-import PaketSection from "@/components/ui/section/PaketSection";
 import MemilihKamiSection from "@/components/ui/section/MemilihKamiSection";
-import FormWa from "@/components/form/FormWa";
 
 export default function HomePage() {
   const [openModal, setOpenModal] = useState(false);

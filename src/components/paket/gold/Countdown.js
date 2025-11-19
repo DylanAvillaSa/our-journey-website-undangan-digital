@@ -3,18 +3,41 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function Countdown({ date }) {
+export default function Countdown({ date, waktu }) {
+  // DEFAULT kalau tidak ada di database
+  const safeDate = date && date.trim() !== "" ? date : getDefaultDate(); // 7 hari dari sekarang
+  const safeWaktu = waktu && waktu.trim() !== "" ? waktu : "09:00";
+
+  function getDefaultDate() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
+  }
+
   const calculateTimeLeft = () => {
-    const difference = new Date(date) - new Date();
-    if (difference > 0) {
-      return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-      };
+    const [year, month, day] = safeDate.split("-").map(Number);
+    const [hour, minute] = safeWaktu.split(":").map(Number);
+
+    const eventDate = new Date(year, month - 1, day, hour, minute, 0);
+    const now = new Date();
+    let diff = eventDate - now;
+
+    // tolerance 2 menit
+    if (diff < 0 && Math.abs(diff) < 120000) {
+      diff = 0;
     }
-    return null;
+
+    if (diff <= 0) return null;
+
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
   };
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
@@ -25,7 +48,7 @@ export default function Countdown({ date }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [date]);
+  }, [date, waktu]);
 
   if (!timeLeft) {
     return (
@@ -35,7 +58,6 @@ export default function Countdown({ date }) {
     );
   }
 
-  // Animasi angka tiap berubah
   const flipVariant = {
     initial: { opacity: 0, y: -20, rotateX: -90 },
     animate: { opacity: 1, y: 0, rotateX: 0 },

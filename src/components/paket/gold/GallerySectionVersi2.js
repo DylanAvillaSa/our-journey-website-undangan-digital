@@ -4,18 +4,18 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-export default function GallerySection2() {
+export default function GallerySection2({ datamempelai }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Foto slider utama
-  const slides = [
+  const slides = datamempelai?.gallery || [
     "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1600&q=80",
     "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=80",
     "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=80",
   ];
 
   // Foto gallery grid
-  const gallery = [
+  const gallery = datamempelai?.gallery || [
     "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80",

@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useTransform,
-} from "framer-motion";
+import { motion, AnimatePresence, time } from "framer-motion";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
 import Image from "next/image";
+import { collection, query, where, getDocs, getDoc } from "firebase/firestore";
+import { db } from "@/libs/config";
 import { PlayCircle, PauseCircle, Heart, Mail, Flower2 } from "lucide-react";
 import TheDate from "@/components/paket/gold/CountdownVersi2";
 import { CalendarDays } from "lucide-react";
 import Gallery3 from "@/components/paket/gold/GallerySectionVersi3";
 import { Bird } from "lucide-react";
+import BottomNavigation from "@/components/ui/BottomNavigation";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const dummyData = [
@@ -74,45 +73,30 @@ export const THEMES = {
   },
 };
 
-const containerVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.4,
-      staggerChildren: 0.1,
-      ease: "easeOut",
-    },
-  },
-  exit: { opacity: 0, y: 20, scale: 0.8, transition: { duration: 0.3 } },
-};
-
-// Variants untuk tiap tombol
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.5, y: 10 },
-  visible: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.5, y: 10 },
-};
-
-export default function Template1Platinum() {
+export default function Template1Platinum({ id, data }) {
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const [switcher, setSwitcher] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(data || null);
   const [opened, setOpened] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("sunset");
+  const padNumber = (num) => String(num).padStart(2, "0");
+
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
   const [formData, setFormData] = useState({
     nama: "",
     kehadiran: "",
     ucapan: "",
   });
-  const [data, setData] = useState(dummyData);
-  const totalHadir = data.filter((d) => d.kehadiran === "hadir").length;
-  const totalTidakHadir = data.filter(
-    (d) => d.kehadiran === "tidak hadir"
-  ).length;
+
   const [submitted, setSubmitted] = useState(false);
 
   const [messages, setMessages] = useState(() => {
@@ -133,34 +117,56 @@ export default function Template1Platinum() {
   const rekeningList = [
     {
       id: 1,
-      bank: "BCA",
-      nomor: "1234567890",
-      nama: "Dylan Avilla",
-      logo: "/asset/platinum/tema-merak/bca.png",
+      bank: dataMempelai?.jenisRekening || "BCA",
+      nomor: dataMempelai?.nomorRekening || "1234567890",
+      nama: dataMempelai?.namaLengkapPria || "Dylan Avilla",
     },
   ];
 
-  const TARGET_DATE = new Date("2025-12-21T10:00:00");
-  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(TARGET_DATE));
-  const [finished, setFinished] = useState(false);
-
+  // mengambil data dari database
   useEffect(() => {
-    const t = setInterval(() => {
-      const remaining = getTimeRemaining(TARGET_DATE);
-      setTimeLeft(remaining);
-      if (
-        remaining.days === 0 &&
-        remaining.hours === 0 &&
-        remaining.minutes === 0 &&
-        remaining.seconds === 0
-      ) {
-        setFinished(true);
-        clearInterval(t);
-      }
-    }, 1000);
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Platinum 1"),
+          where("status_pembayaran", "==", "lunas")
+        );
 
-    return () => clearInterval(t);
-  }, [TARGET_DATE]);
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna || "sunset");
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // useEffect(() => {
+  //   const t = setInterval(() => {
+  //     const remaining = getTimeRemaining(TARGET_DATE);
+  //     setTimeLeft(remaining);
+  //     if (
+  //       remaining.days === 0 &&
+  //       remaining.hours === 0 &&
+  //       remaining.minutes === 0 &&
+  //       remaining.seconds === 0
+  //     ) {
+  //       setFinished(true);
+  //       clearInterval(t);
+  //     }
+  //   }, 1000);
+
+  //   return () => clearInterval(t);
+  // }, [TARGET_DATE]);
 
   const handleVideoEnd = () => {
     // Saat video pembuka selesai, tampilkan background video
@@ -191,6 +197,36 @@ export default function Template1Platinum() {
   const [guestBook, setGuestBook] = useState([]);
   const [showGift, setShowGift] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [finished, setFinished] = useState(false);
+
+  // 🟩 STEP 2 — Logic hitung mundur
+  useEffect(() => {
+    if (!dataMempelai?.countdownDate || !dataMempelai?.countdownTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const combined = `${dataMempelai?.countdownDate}T${dataMempelai?.countdownTime}`;
+      const parsed = new Date(combined);
+      const target = parsed.getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setFinished(true);
+        clearInterval(interval);
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [dataMempelai?.countdownDate, dataMempelai?.countdownTime]);
 
   useEffect(() => {
     if (ref.current) setTarget(ref.current);
@@ -259,7 +295,9 @@ export default function Template1Platinum() {
     const end = formatForGoogle(endDate);
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      "Vidi & Riffany Wedding"
+      `${dataMempelai?.panggilanPria || "Putra"} & ${
+        dataMempelai?.panggilanWanita || "Putri"
+      } Wedding`
     )}&dates=${start}/${end}&details=${encodeURIComponent(
       "Acara pernikahan kami"
     )}&location=${encodeURIComponent("Masjid Al-Falah, Jakarta Selatan")}`;
@@ -291,6 +329,13 @@ export default function Template1Platinum() {
     return () => clearInterval(timer);
   }, [images.length]);
 
+  const scrollToSection = (id) => {
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <main
       className={`min-h-screen ${T.pageBg} relative overflow-hidden`}
@@ -301,7 +346,7 @@ export default function Template1Platinum() {
         ref={audioRef}
         // autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -353,7 +398,8 @@ export default function Template1Platinum() {
                 transition={{ delay: 0.6 }}
                 className="font-[var(--font-vibes)] text-5xl md:text-6xl text-white mb-3"
               >
-                Putra & Putri
+                {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                {dataMempelai?.panggilanWanita || "Putri"}
               </motion.h1>
 
               <motion.p
@@ -362,7 +408,7 @@ export default function Template1Platinum() {
                 transition={{ delay: 0.9 }}
                 className="text-white text-lg md:text-xl mb-8 font-[var(--font-playfair)]"
               >
-                12.12.2023
+                {dataMempelai?.tanggalAkad || "12.12.2023"}
               </motion.p>
 
               <motion.div
@@ -374,7 +420,7 @@ export default function Template1Platinum() {
                   Kepada Yth:
                 </p>
                 <p className="text-xl md:text-2xl font-semibold text-teal-600 bg-white rounded w-[200px] mx-auto text-shadow-2xs mb-2">
-                  Nama Tamu
+                  {namaTamu || "Nama Tamu"}
                 </p>
                 <p className="text-white text-sm md:text-base mb-6">
                   Di Tempat
@@ -450,13 +496,13 @@ export default function Template1Platinum() {
                     className="absolute inset-0 w-1/2 mx-auto flex flex-col items-center justify-center text-white text-center bottom-9"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1, duration: 2 }}
+                    transition={{ delay: 0.5, duration: 2 }}
                   >
                     <motion.h1
                       className="text-sm md:text-6xl font-bold tracking-wide drop-shadow-lg"
                       initial={{ y: 30, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 1.5, duration: 1 }}
+                      transition={{ delay: 1, duration: 1 }}
                     >
                       <span className="text-teal-800">The Wedding Of</span>
                     </motion.h1>
@@ -467,9 +513,9 @@ export default function Template1Platinum() {
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 2, duration: 1 }}
                     >
-                      <p>Vidi</p>
+                      <p>{dataMempelai?.panggilanPria || "Putra"}</p>
                       <span>&</span>
-                      <p>Riffany</p>
+                      <p>{dataMempelai?.panggilanWanita || "Putri"}</p>
                     </motion.div>
                   </motion.div>
                 </motion.div>
@@ -480,6 +526,8 @@ export default function Template1Platinum() {
           {/* ======== Bagian Konten yang Bisa di Scroll ======== */}
           {showBackgroundVideo && (
             <div className="relative z-10 flex flex-col items-center justify-center text-center text-gray-800 mt-[100vh] mx-3">
+              <BottomNavigation onNavigate={scrollToSection} />
+
               {/* Pembukaan Surah Ar-Rum */}
               <section className="py-20 px-6 md:px-12 bg-white border-dotted border-4 rounded-md border-gray-500">
                 <motion.h2
@@ -550,16 +598,21 @@ export default function Template1Platinum() {
                   >
                     <div className="w-48 h-48 rounded-full overflow-hidden shadow-xl ring-4 ring-teal-300/40">
                       <img
-                        src="/images/prewed-1.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiPria ||
+                          "/images/prewed-1.jpg"
+                        }
                         alt="Mempelai Pria"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <h4 className="mt-6 text-2xl font-semibold text-teal-800">
-                      Vidi
+                      {dataMempelai?.namaLengkapPria || "Putra"}
                     </h4>
                     <p className="text-gray-600 mt-1">
-                      Putra dari Bapak Ahmad & Ibu Siti
+                      Putra dari Bapak{" "}
+                      {dataMempelai?.ayahMempelaiPria || "Ahmad"} & Ibu{" "}
+                      {dataMempelai?.ibuMempelaiPria || "Siti"}
                     </p>
                   </motion.div>
 
@@ -584,16 +637,21 @@ export default function Template1Platinum() {
                   >
                     <div className="w-48 h-48 rounded-full overflow-hidden shadow-xl ring-4 ring-teal-300/40">
                       <img
-                        src="/images/prewed-2.jpg"
+                        src={
+                          dataMempelai?.fotoMempelaiWanita ||
+                          "/images/prewed-2.jpg"
+                        }
                         alt="Mempelai Wanita"
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <h4 className="mt-6 text-2xl font-semibold text-teal-800">
-                      Riffany
+                      {dataMempelai?.namaLengkapWanita || "Putri"}
                     </h4>
                     <p className="text-gray-600 mt-1">
-                      Putri dari Bapak Yusuf & Ibu Laila
+                      Putri dari Bapak{" "}
+                      {dataMempelai?.ayahMempelaiWanita || "Yusuf"} & Ibu{" "}
+                      {dataMempelai?.ibuMempelaiWanita || "Laila"}
                     </p>
                   </motion.div>
                 </div>
@@ -606,10 +664,12 @@ export default function Template1Platinum() {
                   transition={{ delay: 1, duration: 1 }}
                 >
                   <p className="text-lg md:text-xl">
-                    🗓️ Sabtu, 21 Desember 2025
+                    🗓️ {dataMempelai?.tanggalAkad || "Sabtu, 21 Desember 2025"}
                   </p>
                   <p className="text-lg md:text-xl">
-                    📍 Gedung Puri Indah Convention Hall, Jakarta
+                    📍{" "}
+                    {dataMempelai?.lokasiAkad ||
+                      "Gedung Puri Indah Convention Hall, Jakarta"}
                   </p>
                   <p className="mt-10 text-gray-600 italic max-w-xl mx-auto">
                     Merupakan kehormatan dan kebahagiaan bagi kami apabila
@@ -637,7 +697,7 @@ export default function Template1Platinum() {
                     Hitungan Mundur Menuju Hari Bahagia
                   </motion.h2>
                   <motion.p
-                    className="text-teal-100/90 text-lg mb-12"
+                    className="text-black/90 text-lg mb-12"
                     initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.8 }}
@@ -653,22 +713,22 @@ export default function Template1Platinum() {
                     transition={{ delay: 0.5, duration: 1 }}
                   >
                     {[
-                      { label: "Hari", value: timeLeft.days },
-                      { label: "Jam", value: timeLeft.hours },
-                      { label: "Menit", value: timeLeft.minutes },
-                      { label: "Detik", value: timeLeft.seconds },
+                      { label: "Hari", value: timeLeft?.days },
+                      { label: "Jam", value: timeLeft?.hours },
+                      { label: "Menit", value: timeLeft?.minutes },
+                      { label: "Detik", value: timeLeft?.seconds },
                     ].map((item, i) => (
                       <motion.div
                         key={item.label}
-                        className="flex flex-col items-center justify-center w-28 h-28 md:w-32 md:h-32 bg-white/10 border border-white/20 rounded-full shadow-inner backdrop-blur-md hover:scale-105 transition-transform duration-300"
+                        className="flex flex-col items-center justify-center w-28 h-28 md:w-32 md:h-32 bg-teal-400/10 border border-white/20 rounded-full shadow-inner backdrop-blur-md hover:scale-105 transition-transform duration-300"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.2, duration: 0.6 }}
                       >
-                        <span className="text-3xl md:text-4xl font-semibold">
+                        <span className="text-3xl md:text-4xl text-slate-700 font-semibold">
                           {padNumber(item.value)}
                         </span>
-                        <span className="text-xs mt-2 tracking-widest uppercase text-teal-100/90">
+                        <span className="text-xs mt-2 tracking-widest uppercase text-slate-700/90">
                           {item.label}
                         </span>
                       </motion.div>
@@ -696,6 +756,7 @@ export default function Template1Platinum() {
 
               {/* akad & resepsi */}
               <motion.section
+                id="date"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -728,11 +789,17 @@ export default function Template1Platinum() {
                       🌿 Akad Nikah
                     </h3>
                     <p className="text-gray-700 mb-2">
-                      🗓️ Sabtu, 21 Desember 2025
+                      {}
+                      🗓️{" "}
+                      {dataMempelai?.tanggalAkad || "Sabtu, 21 Desember 2025"}
                     </p>
-                    <p className="text-gray-700 mb-2">⏰ Pukul 09.00 WIB</p>
+                    <p className="text-gray-700 mb-2">
+                      ⏰ Pukul {dataMempelai?.jamAkad || "09.00"} WIB - Selesai
+                    </p>
                     <p className="text-gray-700">
-                      📍 Masjid Al-Azhar, Jakarta Selatan
+                      📍{" "}
+                      {dataMempelai?.lokasiAkad ||
+                        "Masjid Al-Azhar, Jakarta Selatan"}
                     </p>
                     <div className="mt-6 border-t border-teal-200 pt-4 text-gray-600 italic">
                       “Dan di antara tanda-tanda kekuasaan-Nya ialah Dia
@@ -752,13 +819,18 @@ export default function Template1Platinum() {
                       🎉 Resepsi
                     </h3>
                     <p className="text-gray-700 mb-2">
-                      🗓️ Sabtu, 21 Desember 2025
+                      🗓️{" "}
+                      {dataMempelai?.tanggalResepsi ||
+                        "Sabtu, 21 Desember 2025"}
                     </p>
                     <p className="text-gray-700 mb-2">
-                      ⏰ Pukul 11.00 WIB - Selesai
+                      ⏰ Pukul {dataMempelai?.jamResepsi || "11.00"} WIB -
+                      Selesai
                     </p>
                     <p className="text-gray-700">
-                      📍 Gedung Puri Indah Convention Hall, Jakarta
+                      📍{" "}
+                      {dataMempelai?.lokasiResepsi ||
+                        "Gedung Puri Indah Convention Hall, Jakarta"}
                     </p>
                     <div className="mt-6 border-t border-teal-200 pt-4 text-gray-600 italic">
                       Kehadiran dan doa restu Anda merupakan kebahagiaan serta
@@ -778,6 +850,7 @@ export default function Template1Platinum() {
 
               {/* love story */}
               <motion.section
+                id="love"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -812,12 +885,15 @@ export default function Template1Platinum() {
                       Pertemuan Pertama
                     </h3>
                     <p className="text-gray-600 mt-3">
-                      Semua berawal dari pertemuan tak terduga di kampus, di
+                      {dataMempelai?.loveStory[0].text ||
+                        `Semua berawal dari pertemuan tak terduga di kampus, di
                       mana senyum pertama menjadi awal dari kisah yang indah.
                       Sejak saat itu, percakapan sederhana berkembang menjadi
-                      kebersamaan yang berarti.
+                      kebersamaan yang berarti.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-400 italic">2019</p>
+                    <p className="mt-4 text-sm text-gray-400 italic">
+                      {dataMempelai?.loveStory[0].when || "2019"}
+                    </p>
                   </motion.div>
 
                   {/* Step 2 */}
@@ -833,12 +909,15 @@ export default function Template1Platinum() {
                       Menjalin Hubungan
                     </h3>
                     <p className="text-gray-600 mt-3">
-                      Waktu berlalu, rasa semakin tumbuh, dan kami pun
+                      {dataMempelai?.loveStory[1].text ||
+                        `Waktu berlalu, rasa semakin tumbuh, dan kami pun
                       memutuskan untuk saling mengenal lebih dalam. Bersama-sama
                       melewati suka dan duka, belajar arti kesabaran dan
-                      kepercayaan.
+                      kepercayaan.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-400 italic">2021</p>
+                    <p className="mt-4 text-sm text-gray-400 italic">
+                      {dataMempelai?.loveStory[1].when || "2021"}
+                    </p>
                   </motion.div>
 
                   {/* Step 3 */}
@@ -854,11 +933,14 @@ export default function Template1Platinum() {
                       Menuju Pelaminan
                     </h3>
                     <p className="text-gray-600 mt-3">
-                      Setelah melewati perjalanan panjang, dengan restu keluarga
+                      {dataMempelai?.loveStory[3].text ||
+                        `Setelah melewati perjalanan panjang, dengan restu keluarga
                       dan ridho Allah, kami mantap melangkah ke jenjang yang
-                      lebih sakral: pernikahan.
+                      lebih sakral: pernikahan.`}
                     </p>
-                    <p className="mt-4 text-sm text-gray-400 italic">2025</p>
+                    <p className="mt-4 text-sm text-gray-400 italic">
+                      {dataMempelai?.loveStory[3].when || "2025"}
+                    </p>
                   </motion.div>
                 </div>
 
@@ -874,6 +956,7 @@ export default function Template1Platinum() {
 
               {/* Galeri Foto */}
               <motion.section
+                id="galeri"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -898,34 +981,57 @@ export default function Template1Platinum() {
 
                 {/* Galeri grid */}
                 <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {[
-                    "/images/prewed-1.jpg",
-                    "/images/prewed-2.jpg",
-                    "/images/tmp.jpg",
-                    "/images/bg-wedding.jpg",
-                    "/images/bg.jpg",
-                  ].map((src, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                      className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
-                      onClick={() => setSelectedImage(src)}
-                    >
-                      <img
-                        src={src}
-                        alt={`Foto ${i + 1}`}
-                        className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
-                      />
-                      {/* Overlay hover */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
-                        <span className="text-white text-sm md:text-base font-medium tracking-wide">
-                          Klik untuk melihat
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {dataMempelai?.gallery.length > 0
+                    ? dataMempelai?.gallery.map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))
+                    : [
+                        "/images/prewed-1.jpg",
+                        "/images/prewed-2.jpg",
+                        "/images/tmp.jpg",
+                        "/images/bg-wedding.jpg",
+                        "/images/bg.jpg",
+                      ].map((src, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                          className="relative group rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                          onClick={() => setSelectedImage(src)}
+                        >
+                          <img
+                            src={src}
+                            alt={`Foto ${i + 1}`}
+                            className="object-cover w-full h-52 md:h-64 lg:h-72 transform group-hover:scale-110 transition duration-500"
+                          />
+                          {/* Overlay hover */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-500">
+                            <span className="text-white text-sm md:text-base font-medium tracking-wide">
+                              Klik untuk melihat
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
                 </div>
 
                 {/* Lightbox modal */}
@@ -1024,11 +1130,6 @@ export default function Template1Platinum() {
                             className="absolute opacity-20 -right-10 -bottom-10 w-32 rotate-12 pointer-events-none"
                           />
                           <div className="flex items-center gap-3 mb-4">
-                            <img
-                              src={rek.logo}
-                              alt={rek.bank}
-                              className="w-10 h-10"
-                            />
                             <h3 className="text-xl font-bold text-teal-800">
                               Bank {rek.bank}
                             </h3>
@@ -1065,6 +1166,7 @@ export default function Template1Platinum() {
 
               {/* Form RSPV */}
               <motion.form
+                id="rsvp  "
                 onSubmit={handleSubmit}
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1227,15 +1329,11 @@ export default function Template1Platinum() {
                   className="flex flex-col md:flex-row items-center justify-center gap-6 mb-12"
                 >
                   <div className="bg-white shadow-xl rounded-2xl px-8 py-6 w-60 border border-teal-100">
-                    <h3 className="text-3xl font-bold text-teal-700">
-                      {totalHadir}
-                    </h3>
+                    <h3 className="text-3xl font-bold text-teal-700">0</h3>
                     <p className="text-gray-600 mt-1">Tamu Hadir 💚</p>
                   </div>
                   <div className="bg-white shadow-xl rounded-2xl px-8 py-6 w-60 border border-teal-100">
-                    <h3 className="text-3xl font-bold text-rose-600">
-                      {totalTidakHadir}
-                    </h3>
+                    <h3 className="text-3xl font-bold text-rose-600">0</h3>
                     <p className="text-gray-600 mt-1">Tidak Hadir 💔</p>
                   </div>
                 </motion.div>
@@ -1249,7 +1347,7 @@ export default function Template1Platinum() {
                     viewport={{ once: true }}
                     className="flex flex-col gap-6"
                   >
-                    {data.map((item, index) => (
+                    {[].map((item, index) => (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, y: 30 }}
@@ -1258,7 +1356,7 @@ export default function Template1Platinum() {
                         className="bg-white/80 backdrop-blur-sm shadow-md rounded-2xl p-6 border border-teal-100 text-left relative"
                       >
                         {/* Ornamen kecil di pojok */}
-                        <div className="absolute top-3 right-3 w-6 h-6 bg-[url('/asset/platinum/tema-merak/mini-floral.png')] bg-contain bg-no-repeat opacity-40"></div>
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-contain bg-no-repeat opacity-40"></div>
 
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-lg font-semibold text-teal-800">
@@ -1289,6 +1387,7 @@ export default function Template1Platinum() {
                   </motion.div>
                 </div>
               </motion.section>
+
               {/* Penutup */}
               <motion.section
                 initial={{ opacity: 0, y: 50 }}
@@ -1297,16 +1396,14 @@ export default function Template1Platinum() {
                 viewport={{ once: true }}
                 className="relative py-20 mt-12 bg-gradient-to-b from-slate-50 via-white to-slate-100 overflow-hidden text-center"
               >
-                {/* Ornamen atas */}
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-atas.png"
-                  alt="ornament atas"
-                  className="absolute top-0 left-0 w-48 opacity-60 animate-pulse"
-                />
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-atas.png"
-                  alt="ornament atas kanan"
-                  className="absolute top-0 right-0 w-48 opacity-60 animate-pulse rotate-180"
+                {/* foto penutup */}
+                <motion.img
+                  src={
+                    dataMempelai?.fotoSampul[1] || "/foto-dummy/slider5.jpeg"
+                  }
+                  loading="lazy"
+                  alt="Bunga Pembuka"
+                  className=" w-[200px] mx-auto border-4 border-[#a38751]  h-[270px] object-cover rounded-4xl"
                 />
 
                 {/* Ucapan Terima Kasih */}
@@ -1337,7 +1434,8 @@ export default function Template1Platinum() {
                   {/* Nama Pasangan */}
                   <div className="flex flex-col items-center space-y-4">
                     <h3 className="text-3xl font-bold text-gray-800 font-serif">
-                      Aulia & Rafi
+                      {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                      {dataMempelai?.panggilanWanita || "Putri"}
                     </h3>
                     <motion.div
                       initial={{ scale: 0 }}
@@ -1349,21 +1447,11 @@ export default function Template1Platinum() {
                       }}
                       className="w-16 h-0.5 bg-teal-400 rounded-full"
                     />
-                    <p className="text-gray-500">21 Desember 2025</p>
+                    <p className="text-gray-500">
+                      {dataMempelai?.tanggalAkad || "21 Desember 2025"}
+                    </p>
                   </div>
                 </motion.div>
-
-                {/* Ornamen bawah */}
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-bawah.png"
-                  alt="ornament bawah"
-                  className="absolute bottom-0 left-0 w-48 opacity-60 animate-pulse"
-                />
-                <img
-                  src="/asset/platinum/tema-merak/ornament-merak-bawah.png"
-                  alt="ornament bawah kanan"
-                  className="absolute bottom-0 right-0 w-48 opacity-60 animate-pulse rotate-180"
-                />
 
                 {/* Footer */}
                 <footer className="mt-16 text-sm text-gray-400">
@@ -1381,25 +1469,4 @@ export default function Template1Platinum() {
       )}
     </main>
   );
-}
-
-function getTimeRemaining(target) {
-  const now = new Date();
-  const t = Math.max(0, target.getTime() - now.getTime()); // ms remaining, at least 0
-  // compute step-by-step:
-  const msInSecond = 1000;
-  const msInMinute = 60 * msInSecond;
-  const msInHour = 60 * msInMinute;
-  const msInDay = 24 * msInHour;
-
-  const days = Math.floor(t / msInDay);
-  const hours = Math.floor((t % msInDay) / msInHour);
-  const minutes = Math.floor((t % msInHour) / msInMinute);
-  const seconds = Math.floor((t % msInMinute) / msInSecond);
-
-  return { total: t, days, hours, minutes, seconds };
-}
-
-function padNumber(n) {
-  return String(n).padStart(2, "0");
 }

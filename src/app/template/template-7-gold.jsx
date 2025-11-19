@@ -41,7 +41,7 @@ const THEMES = {
   },
 };
 
-export default function Template7Gold() {
+export default function Template7Gold({ id, data }) {
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
   const [opened, setOpened] = useState(false);

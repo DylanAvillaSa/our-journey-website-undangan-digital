@@ -7,12 +7,15 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/libs/config";
 import AmplopGift from "@/components/paket/gold/AmplopGift";
 import Image from "next/image";
 import { PlayCircle, PauseCircle, Heart, Mail, Flower2 } from "lucide-react";
 import TheDate from "@/components/paket/gold/CountdownVersi2";
 import { CalendarDays } from "lucide-react";
 import Gallery3 from "@/components/paket/gold/GallerySectionVersi3";
+import { useSearchParams } from "next/navigation";
 
 // ===== Dummy Messages (Ucapan & Doa) =====
 const initialMessages = [
@@ -87,13 +90,16 @@ const itemVariants = {
   exit: { opacity: 0, scale: 0.5, y: 10 },
 };
 
-export default function Template5Gold() {
+export default function Template5Gold({ id, data }) {
+  const searchParams = useSearchParams();
+  const namaTamu = searchParams.get("to");
   const rsvpRef = useRef(null);
   const audioRef = useRef(null);
   const Ref = useRef(null);
 
   const [switcher, setSwitcher] = useState(false);
   const [opened, setOpened] = useState(false);
+  const [dataMempelai, setDataMempelai] = useState(data || null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [theme, setTheme] = useState("sunset");
 
@@ -112,13 +118,7 @@ export default function Template5Gold() {
   });
 
   const [guestForm, setGuestForm] = useState({ name: "", message: "" });
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [
-    "/gallery/p1.jpg",
-    "/gallery/p2.jpg",
-    "/gallery/p3.jpg",
-    "/gallery/p4.jpg",
-  ];
+
   const T = THEMES[theme];
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 1000], [0, 200]);
@@ -134,17 +134,33 @@ export default function Template5Gold() {
     if (ref.current) setTarget(ref.current);
   }, []);
 
-  const yBird = useTransform(scrollYProgress, [0, 1], [0, 50]); // burung gerak turun
-  const yText = useTransform(scrollYProgress, [0, 1], [0, 30]);
-
   const handleOpen = () => setOpened(true);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((s) => (s === slides.length - 1 ? 0 : s + 1));
-    }, 4000); // ganti slide tiap 4 detik
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    const fetchData = async () => {
+      try {
+        // ambil data berdasarkan email atau template
+        const q = query(
+          collection(db, "pembelian"),
+          where("template", "==", "Gold 5"),
+          where("status_pembayaran", "==", "lunas")
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty && id !== undefined) {
+          const doc = querySnapshot.docs[0].data();
+          setDataMempelai(doc.dataMempelai);
+          setTheme(doc.dataMempelai.temaWarna);
+        } else {
+          console.log("❌ Tidak ada data ditemukan untuk template ini");
+        }
+      } catch (err) {
+        console.error("Gagal ambil data Firestore:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (opened && rsvpRef.current) {
@@ -207,7 +223,9 @@ export default function Template5Gold() {
     const end = formatForGoogle(endDate);
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      "Vidi & Riffany Wedding"
+      `${dataMempelai?.panggilanPria || "Vidi"} & ${
+        dataMempelai?.panggilanWanita || "Riffany"
+      }Wedding`
     )}&dates=${start}/${end}&details=${encodeURIComponent(
       "Acara pernikahan kami"
     )}&location=${encodeURIComponent("Masjid Al-Falah, Jakarta Selatan")}`;
@@ -215,7 +233,7 @@ export default function Template5Gold() {
     window.open(url, "_blank");
   };
 
-  const images = [
+  const images = dataMempelai?.gallery || [
     "/images/family.jpg",
     "/images/tmp.jpg",
     "/images/bg-wedding.jpg",
@@ -249,7 +267,7 @@ export default function Template5Gold() {
         ref={audioRef}
         autoPlay
         loop
-        src="/bg-wedding.mp3"
+        src={dataMempelai?.backsound || "/bg-wedding.mp3"}
         className="hidden"
       />
 
@@ -275,17 +293,19 @@ export default function Template5Gold() {
       </div>
 
       {/* ===== Switcher (tengah bawah) ===== */}
-      <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
-        <div
-          className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
+      {!dataMempelai?.temaWarna && (
+        <div className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2">
+          <div
+            className={`p-3 rounded-full shadow-lg text-xs ${T.cta} 
       text-white flex items-center justify-center ${
         switcher ? "hidden" : "opacity-35"
       } group`}
-          onClick={() => setSwitcher(!switcher)}
-        >
-          Theme
+            onClick={() => setSwitcher(!switcher)}
+          >
+            Theme
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {switcher && (
@@ -382,7 +402,8 @@ export default function Template5Gold() {
               transition={{ delay: 0.6 }}
               className="font-[var(--font-vibes)] text-5xl md:text-6xl text-white mb-3"
             >
-              Putra & Putri
+              {dataMempelai?.panggilanPria || "Putra"} &{" "}
+              {dataMempelai?.panggilanWanita || "Putri"}
             </motion.h1>
 
             {/* Tanggal */}
@@ -392,7 +413,7 @@ export default function Template5Gold() {
               transition={{ delay: 0.9 }}
               className="text-white text-lg md:text-xl mb-8 font-[var(--font-playfair)]"
             >
-              12.12.2023
+              {dataMempelai?.tanggalAkad || "12.12.2023"}
             </motion.p>
 
             {/* Sapaan tamu */}
@@ -405,7 +426,7 @@ export default function Template5Gold() {
                 Kepada Yth:
               </p>
               <p className="text-xl md:text-2xl font-semibold text-yellow-400 mb-2">
-                Nama Tamu
+                {namaTamu || "Nama Tamu"}
               </p>
               <p className="text-white text-sm md:text-base mb-6">Di Tempat</p>
             </motion.div>
@@ -469,7 +490,8 @@ export default function Template5Gold() {
                   transition={{ duration: 1 }}
                   className="font-[GreatVibes] text-5xl md:text-7xl drop-shadow-lg"
                 >
-                  Putra & Putri
+                  {dataMempelai?.panggilanPria || "Putra"} &{" "}
+                  {dataMempelai?.panggilanWanita || "Putri"}
                 </motion.h1>
 
                 <motion.p
@@ -478,7 +500,7 @@ export default function Template5Gold() {
                   transition={{ duration: 1.2 }}
                   className="mt-6 text-sm md:text-lg tracking-wide"
                 >
-                  Senin, 12 Mei 2025
+                  {dataMempelai?.tanggalAkad || "Senin, 12 Mei 2025"}
                 </motion.p>
               </div>
             </div>
@@ -556,14 +578,7 @@ export default function Template5Gold() {
               />
 
               {/* Pattern floral tipis */}
-              <div
-                className="absolute inset-0 opacity-[0.07]"
-                style={{
-                  backgroundImage: "url('/asset/pattern-floral.png')",
-                  backgroundRepeat: "repeat",
-                  backgroundSize: "300px",
-                }}
-              />
+              <div className="absolute inset-0 opacity-[0.07]" />
 
               {/* Overlay cahaya */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-white/60 blur-3xl rounded-full opacity-40" />
@@ -607,17 +622,21 @@ export default function Template5Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/wanita.png"
+                    src={
+                      dataMempelai?.fotoMempelaiWanita[0] ||
+                      "/foto-dummy/wanita.png"
+                    }
                     alt="Mempelai Wanita"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Anissa Putri
+                  {dataMempelai?.namaLengkapWanita || "Anissa Putri"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putri dari Bapak Ahmad & Ibu Siti
+                  Putri dari Bapak {dataMempelai?.ayahMempelaiWanita || "Ahmad"}{" "}
+                  & Ibu {dataMempelai?.ibuMempelaiWanita || "Siti"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang wanita penyayang, penuh perhatian, dan selalu ceria
@@ -636,17 +655,21 @@ export default function Template5Gold() {
               >
                 <div className="relative w-40 h-40 md:w-52 md:h-52 mb-6">
                   <Image
-                    src="/foto-dummy/pria.png"
+                    src={
+                      dataMempelai?.fotoMempelaiPria[0] ||
+                      "/foto-dummy/pria.png"
+                    }
                     alt="Mempelai Pria"
                     fill
                     className="rounded-full object-cover border-4 border-[var(--color-primary)] shadow-lg"
                   />
                 </div>
                 <h3 className="font-[var(--font-vibes)] text-3xl text-gray-800">
-                  Vidi Lukman
+                  {dataMempelai?.namaLengkapPria || "Vidi Lukman"}
                 </h3>
                 <p className="text-gray-500 text-sm mb-2">
-                  Putra dari Bapak Yusuf & Ibu Aminah
+                  Putra dari Bapak {dataMempelai?.ayahMempelaiPria || "Yusuf"} &
+                  Ibu {dataMempelai?.ibuMempelaiPria || "Aminah"}
                 </p>
                 <p className="text-gray-600 text-sm md:text-base leading-relaxed max-w-md">
                   Seorang pria sederhana, penuh tanggung jawab, dan sabar yang
@@ -703,70 +726,115 @@ export default function Template5Gold() {
               ></div>
 
               {/* Items */}
-              {[
-                {
-                  year: "2019",
-                  title: "First Met",
-                  desc: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
-                },
-                {
-                  year: "2020",
-                  title: "First Date",
-                  desc: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
-                },
-                {
-                  year: "2022",
-                  title: "Engagement",
-                  desc: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
-                },
-                {
-                  year: "2025",
-                  title: "Wedding Day",
-                  desc: "Hari spesial di mana kami berjanji sehidup semati.",
-                },
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  className={`mb-16 flex items-center w-full ${
-                    idx % 2 === 0 ? "justify-start" : "justify-end"
-                  }`}
-                  initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{
-                    duration: 1,
-                    ease: "easeOut",
-                    delay: idx * 0.2,
-                  }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  {/* Card */}
-                  <div
-                    className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
-                  >
-                    {/* Icon Dot */}
-                    <div
-                      className={`absolute top-6 ${
-                        idx % 2 === 0 ? "-right-8" : "-left-8"
-                      } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
-                        THEMES[theme].cta
-                      }`}
-                    >
-                      <i className="fa-solid fa-heart text-white"></i>
-                    </div>
 
-                    {/* Isi Card */}
-                    <p className="text-sm text-gray-400">{item.year}</p>
-                    <h3
-                      className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+              {dataMempelai?.loveStory.length > 0
+                ? dataMempelai?.loveStory.map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
+                      }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
                     >
-                      {item.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm md:text-base">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
+                      >
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
+
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))
+                : [
+                    {
+                      when: "2019",
+                      title: "First Met",
+                      text: "Kami pertama kali bertemu di kampus dan langsung merasa ada sesuatu yang berbeda.",
+                    },
+                    {
+                      when: "2020",
+                      title: "First Date",
+                      text: "Momen pertama kali jalan bersama menjadi kenangan yang tak terlupakan.",
+                    },
+                    {
+                      when: "2022",
+                      title: "Engagement",
+                      text: "Kami memutuskan untuk mengikat janji dalam sebuah pertunangan sederhana.",
+                    },
+                    {
+                      when: "2025",
+                      title: "Wedding Day",
+                      text: "Hari spesial di mana kami berjanji sehidup semati.",
+                    },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`mb-16 flex items-center w-full ${
+                        idx % 2 === 0 ? "justify-start" : "justify-end"
+                      }`}
+                      initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
+                        delay: idx * 0.2,
+                      }}
+                      viewport={{ once: true, amount: 0.3 }}
+                    >
+                      {/* Card */}
+                      <div
+                        className={`relative w-full md:w-[45%] bg-white rounded-2xl shadow-xl border border-pink-100 p-6`}
+                      >
+                        {/* Icon Dot */}
+                        <div
+                          className={`absolute top-6 ${
+                            idx % 2 === 0 ? "-right-8" : "-left-8"
+                          } w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                            THEMES[theme].cta
+                          }`}
+                        >
+                          <i className="fa-solid fa-heart text-white"></i>
+                        </div>
+
+                        {/* Isi Card */}
+                        <p className="text-sm text-gray-400">{item.when}</p>
+                        <h3
+                          className={`text-xl font-semibold mb-2 ${THEMES[theme].textMain}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm md:text-base">
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
             </div>
 
             {/* Ornamen Dekorasi */}
@@ -792,7 +860,11 @@ export default function Template5Gold() {
 
           {/* countdown */}
           <section className="relative py-16 px-6 max-w-2xl mx-auto">
-            <TheDate background={THEMES} theme={theme} />
+            <TheDate
+              background={THEMES}
+              theme={theme}
+              datamempelai={dataMempelai}
+            />
 
             {/* Card Acara */}
             <motion.div
@@ -833,11 +905,12 @@ export default function Template5Gold() {
 
               {/* Lokasi */}
               <h4 className={`${THEMES[theme].textMain} font-semibold`}>
-                Mesjid Baiturrahman
+                {dataMempelai?.lokasiAkad || "Mesjid Baiturrahman"}
               </h4>
               <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
-                Yogyakarta
+                {dataMempelai?.lokasiAkad ||
+                  `Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
+                Yogyakarta`}
               </p>
             </motion.div>
 
@@ -880,11 +953,12 @@ export default function Template5Gold() {
 
               {/* Lokasi */}
               <h4 className={`${THEMES[theme].textMain} font-semibold`}>
-                Mesjid Baiturrahman
+                {dataMempelai?.lokasiAkad || "Mesjid Baiturrahman"}
               </h4>
               <p className="text-sm text-gray-600 mt-1 leading-relaxed">
-                Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
-                Yogyakarta
+                {dataMempelai?.lokasiAkad ||
+                  `Jl. Wonocatur, Wonocatur, Banguntapan, Kec. Banguntapan, Bantul,
+                Yogyakarta`}
               </p>
             </motion.div>
           </section>
@@ -903,7 +977,10 @@ export default function Template5Gold() {
               >
                 <h4 className="font-semibold mb-2">Peta Lokasi</h4>
                 <iframe
-                  src="https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  src={
+                    dataMempelai?.linkMaps ||
+                    "https://www.google.com/maps?q=-6.244669,106.800483&z=15&output=embed"
+                  }
                   width="100%"
                   height="200"
                   className="border-0 rounded-md"
@@ -914,7 +991,11 @@ export default function Template5Gold() {
           </motion.section>
 
           {/* Gallery */}
-          <Gallery3 background={THEMES} theme={theme} />
+          <Gallery3
+            background={THEMES}
+            theme={theme}
+            datamempelai={dataMempelai}
+          />
 
           {/* Ucapan & Doa + Guest Book form */}
           <section
@@ -1035,7 +1116,11 @@ export default function Template5Gold() {
             transition={{ duration: 0.6 }}
             className="py-10 px-4"
           >
-            <AmplopGift background={THEMES} T={theme} />
+            <AmplopGift
+              background={THEMES}
+              T={theme}
+              datamempelai={dataMempelai}
+            />
           </motion.section>
 
           {/* Footer */}
@@ -1065,12 +1150,17 @@ export default function Template5Gold() {
                 className="text-pink-500 animate-pulse"
                 fill="currentColor"
               />
-              <span>Vidi & Tijani</span>
+              <span>
+                {dataMempelai?.panggilanPria || "Vidi"} &{" "}
+                {dataMempelai?.panggilanWanita || "Tijani"}
+              </span>
             </div>
 
             {/* Small copyright */}
             <p className="mt-4 text-xs text-gray-400">
-              © {new Date().getFullYear()} Vidi & Tijani Wedding
+              © {new Date().getFullYear()}{" "}
+              {dataMempelai?.panggilanPria || "Vidi"} &{" "}
+              {dataMempelai?.panggilanWanita || "Tijani"} Wedding
             </p>
           </motion.footer>
         </div>
