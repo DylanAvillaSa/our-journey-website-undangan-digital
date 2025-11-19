@@ -46,41 +46,81 @@ export default function AmplopGift({ T, background, datamempelai }) {
 
         {/* Rekening Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {accounts.map((acc, idx) => (
-            <motion.div
-              key={idx}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className={`relative p-6 rounded-2xl shadow-lg text-white bg-gradient-to-tr ${acc.color}`}
-            >
-              {/* Bank logo */}
-              <div className="absolute top-4 right-4 text-sm font-bold opacity-90">
-                {acc.bank}
-              </div>
-
-              {/* Rekening number */}
-              <div className="text-lg md:text-xl font-mono tracking-widest mb-6 break-words">
-                {acc.number}
-              </div>
-
-              {/* Owner + Copy */}
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm">{acc.owner}</h4>
-                <button
-                  onClick={() => handleCopy(acc.number)}
-                  className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
+          {datamempelai?.rekening.length > 0
+            ? datamempelai?.rekening.map((acc, idx) => (
+                <motion.div
+                  key={idx}
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className={`relative p-6 rounded-2xl shadow-lg text-white bg-gradient-to-tr ${
+                    acc.bank == "BCA"
+                      ? "from-blue-500 to-blue-300"
+                      : "from-slate-500 to-slate-300"
+                  }`}
                 >
-                  <Copy size={16} />
-                </button>
-              </div>
+                  {/* Bank logo */}
+                  <div className="absolute top-4 right-4 text-sm font-bold opacity-90">
+                    {acc.bank}
+                  </div>
 
-              {copied === acc.number && (
-                <span className="absolute bottom-2 left-4 text-xs text-green-200">
-                  📋 Nomor disalin
-                </span>
-              )}
-            </motion.div>
-          ))}
+                  {/* Rekening number */}
+                  <div className="text-lg md:text-xl font-mono tracking-widest mb-6 break-words">
+                    {acc.nomor}
+                  </div>
+
+                  {/* Owner + Copy */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">{acc.nama}</h4>
+                    <button
+                      onClick={() => handleCopy(acc.nomor)}
+                      className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+
+                  {copied === acc.nomor && (
+                    <span className="absolute bottom-2 left-4 text-xs text-green-200">
+                      📋 Nomor disalin
+                    </span>
+                  )}
+                </motion.div>
+              ))
+            : accounts.map((acc, idx) => (
+                <motion.div
+                  key={idx}
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className={`relative p-6 rounded-2xl shadow-lg text-white bg-gradient-to-tr ${acc.color}`}
+                >
+                  {/* Bank logo */}
+                  <div className="absolute top-4 right-4 text-sm font-bold opacity-90">
+                    {acc.bank}
+                  </div>
+
+                  {/* Rekening number */}
+                  <div className="text-lg md:text-xl font-mono tracking-widest mb-6 break-words">
+                    {acc.number}
+                  </div>
+
+                  {/* Owner + Copy */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">{acc.owner}</h4>
+                    <button
+                      onClick={() => handleCopy(acc.number)}
+                      className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+
+                  {copied === acc.number && (
+                    <span className="absolute bottom-2 left-4 text-xs text-green-200">
+                      📋 Nomor disalin
+                    </span>
+                  )}
+                </motion.div>
+              ))}
         </div>
 
         {/* Buttons */}

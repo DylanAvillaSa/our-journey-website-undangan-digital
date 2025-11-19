@@ -1322,52 +1322,98 @@ export default function PlatinumTemplate14({ id, data: datas }) {
                       transition={{ duration: 0.6 }}
                       className="mt-10 flex justify-center space-x-6 flex-wrap"
                     >
-                      {rekeningList.map((rek) => (
-                        <motion.div
-                          key={rek.id}
-                          whileHover={{ scale: 1.03 }}
-                          className="bg-white/95 shadow-xl rounded-2xl px-8 py-6 w-80 text-left border border-teal-100 relative overflow-hidden"
-                        >
-                          <img
-                            src="/asset/platinum/tema-merak/ornament-merak.png"
-                            alt="ornamen"
-                            className="absolute opacity-20 -right-10 -bottom-10 w-32 rotate-12 pointer-events-none"
-                          />
-                          <div className="flex items-center gap-3 mb-4">
-                            <img
-                              src={rek.logo}
-                              alt={rek.bank}
-                              className="w-10 h-10"
-                            />
-                            <h3 className="text-xl font-bold text-slate-800">
-                              Bank {rek.bank}
-                            </h3>
-                          </div>
-                          <p className="text-gray-700 mb-1">
-                            No. Rekening:
-                            <span className="font-semibold ml-2">
-                              {rek.nomor}
-                            </span>
-                          </p>
-                          <p className="text-gray-700 mb-4">
-                            a.n.{" "}
-                            <span className="font-semibold">{rek.nama}</span>
-                          </p>
+                      {dataMempelai?.rekening.length > 0
+                        ? dataMempelai?.rekening.map((rek) => (
+                            <motion.div
+                              key={rek.id}
+                              whileHover={{ scale: 1.03 }}
+                              className="bg-white/95 shadow-xl rounded-2xl px-8 py-6 w-80 text-left border border-teal-100 relative overflow-hidden"
+                            >
+                              <img
+                                src="/asset/platinum/tema-merak/ornament-merak.png"
+                                alt="ornamen"
+                                className="absolute opacity-20 -right-10 -bottom-10 w-32 rotate-12 pointer-events-none"
+                              />
+                              <div className="flex items-center gap-3 mb-4">
+                                <h3 className="text-xl font-bold text-slate-800">
+                                  Bank {rek.bank}
+                                </h3>
+                              </div>
+                              <p className="text-gray-700 mb-1">
+                                No. Rekening:
+                                <span className="font-semibold ml-2">
+                                  {rek.nomor}
+                                </span>
+                              </p>
+                              <p className="text-gray-700 mb-4">
+                                a.n.{" "}
+                                <span className="font-semibold">
+                                  {rek.nama}
+                                </span>
+                              </p>
 
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(rek.nomor);
-                              setCopied(rek.id.toString());
-                              setTimeout(() => setCopied(null), 2000);
-                            }}
-                            className="text-sm bg-slate-700 text-white px-4 py-2 rounded-full hover:bg-slate-800 transition"
-                          >
-                            {copied === rek.id.toString()
-                              ? "✅ Disalin"
-                              : "Salin Nomor"}
-                          </button>
-                        </motion.div>
-                      ))}
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(rek.nomor);
+                                  setCopied(rek.id.toString());
+                                  setTimeout(() => setCopied(null), 2000);
+                                }}
+                                className="text-sm bg-slate-700 text-white px-4 py-2 rounded-full hover:bg-slate-800 transition"
+                              >
+                                {copied === rek.id.toString()
+                                  ? "✅ Disalin"
+                                  : "Salin Nomor"}
+                              </button>
+                            </motion.div>
+                          ))
+                        : rekeningList.map((rek) => (
+                            <motion.div
+                              key={rek.id}
+                              whileHover={{ scale: 1.03 }}
+                              className="bg-white/95 shadow-xl rounded-2xl px-8 py-6 w-80 text-left border border-teal-100 relative overflow-hidden"
+                            >
+                              <img
+                                src="/asset/platinum/tema-merak/ornament-merak.png"
+                                alt="ornamen"
+                                className="absolute opacity-20 -right-10 -bottom-10 w-32 rotate-12 pointer-events-none"
+                              />
+                              <div className="flex items-center gap-3 mb-4">
+                                <img
+                                  src={rek.logo}
+                                  alt={rek.bank}
+                                  className="w-10 h-10"
+                                />
+                                <h3 className="text-xl font-bold text-slate-800">
+                                  Bank {rek.bank}
+                                </h3>
+                              </div>
+                              <p className="text-gray-700 mb-1">
+                                No. Rekening:
+                                <span className="font-semibold ml-2">
+                                  {rek.nomor}
+                                </span>
+                              </p>
+                              <p className="text-gray-700 mb-4">
+                                a.n.{" "}
+                                <span className="font-semibold">
+                                  {rek.nama}
+                                </span>
+                              </p>
+
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(rek.nomor);
+                                  setCopied(rek.id.toString());
+                                  setTimeout(() => setCopied(null), 2000);
+                                }}
+                                className="text-sm bg-slate-700 text-white px-4 py-2 rounded-full hover:bg-slate-800 transition"
+                              >
+                                {copied === rek.id.toString()
+                                  ? "✅ Disalin"
+                                  : "Salin Nomor"}
+                              </button>
+                            </motion.div>
+                          ))}
                     </motion.div>
                   )}
                 </AnimatePresence>

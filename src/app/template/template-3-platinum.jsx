@@ -1416,55 +1416,100 @@ export default function PlatinumTemplate15({ id, data: datas }) {
                       transition={{ duration: 0.6 }}
                       className="mt-12 flex justify-center flex-wrap gap-8 px-6"
                     >
-                      {rekeningList.map((rek) => (
-                        <motion.div
-                          key={rek.id}
-                          whileHover={{ scale: 1.03 }}
-                          className="relative bg-white rounded-3xl shadow-2xl w-80 p-8 border border-pink-100 hover:border-pink-300 transition"
-                        >
-                          {/* Ornamen lembut */}
-                          <div className="absolute inset-0 bg-gradient-to-tr from-pink-50 via-white to-pink-100 opacity-40 rounded-3xl"></div>
-
-                          <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-5">
-                              <img
-                                src={rek.logo}
-                                alt={rek.bank}
-                                className="w-10 h-10"
-                              />
-                              <h3 className="text-xl font-bold text-pink-700">
-                                Bank {rek.bank}
-                              </h3>
-                            </div>
-
-                            <p className="text-gray-700 mb-1">
-                              No. Rekening:
-                              <span className="font-semibold ml-2 text-gray-900">
-                                {rek.nomor}
-                              </span>
-                            </p>
-                            <p className="text-gray-700 mb-5">
-                              a.n.{" "}
-                              <span className="font-semibold text-gray-900">
-                                {rek.nama}
-                              </span>
-                            </p>
-
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(rek.nomor);
-                                setCopied(rek.id.toString());
-                                setTimeout(() => setCopied(null), 2000);
-                              }}
-                              className="text-sm bg-pink-600 text-white px-4 py-2 rounded-full shadow-md hover:bg-pink-700 transition"
+                      {dataMempelai?.rekening.length > 0
+                        ? dataMempelai?.rekening.map((rek) => (
+                            <motion.div
+                              key={rek.id}
+                              whileHover={{ scale: 1.03 }}
+                              className="relative bg-white rounded-3xl shadow-2xl w-80 p-8 border border-pink-100 hover:border-pink-300 transition"
                             >
-                              {copied === rek.id.toString()
-                                ? "✅ Disalin"
-                                : "Salin Nomor"}
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
+                              {/* Ornamen lembut */}
+                              <div className="absolute inset-0 bg-gradient-to-tr from-pink-50 via-white to-pink-100 opacity-40 rounded-3xl"></div>
+
+                              <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-5">
+                                  <h3 className="text-xl font-bold text-pink-700">
+                                    Bank {rek.bank}
+                                  </h3>
+                                </div>
+
+                                <p className="text-gray-700 mb-1">
+                                  No. Rekening:
+                                  <span className="font-semibold ml-2 text-gray-900">
+                                    {rek.nomor}
+                                  </span>
+                                </p>
+                                <p className="text-gray-700 mb-5">
+                                  a.n.{" "}
+                                  <span className="font-semibold text-gray-900">
+                                    {rek.nama}
+                                  </span>
+                                </p>
+
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(rek.nomor);
+                                    setCopied(rek.id.toString());
+                                    setTimeout(() => setCopied(null), 2000);
+                                  }}
+                                  className="text-sm bg-pink-600 text-white px-4 py-2 rounded-full shadow-md hover:bg-pink-700 transition"
+                                >
+                                  {copied === rek.id.toString()
+                                    ? "✅ Disalin"
+                                    : "Salin Nomor"}
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))
+                        : rekeningList.map((rek) => (
+                            <motion.div
+                              key={rek.id}
+                              whileHover={{ scale: 1.03 }}
+                              className="relative bg-white rounded-3xl shadow-2xl w-80 p-8 border border-pink-100 hover:border-pink-300 transition"
+                            >
+                              {/* Ornamen lembut */}
+                              <div className="absolute inset-0 bg-gradient-to-tr from-pink-50 via-white to-pink-100 opacity-40 rounded-3xl"></div>
+
+                              <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-5">
+                                  <img
+                                    src={rek.logo}
+                                    alt={rek.bank}
+                                    className="w-10 h-10"
+                                  />
+                                  <h3 className="text-xl font-bold text-pink-700">
+                                    Bank {rek.bank}
+                                  </h3>
+                                </div>
+
+                                <p className="text-gray-700 mb-1">
+                                  No. Rekening:
+                                  <span className="font-semibold ml-2 text-gray-900">
+                                    {rek.nomor}
+                                  </span>
+                                </p>
+                                <p className="text-gray-700 mb-5">
+                                  a.n.{" "}
+                                  <span className="font-semibold text-gray-900">
+                                    {rek.nama}
+                                  </span>
+                                </p>
+
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(rek.nomor);
+                                    setCopied(rek.id.toString());
+                                    setTimeout(() => setCopied(null), 2000);
+                                  }}
+                                  className="text-sm bg-pink-600 text-white px-4 py-2 rounded-full shadow-md hover:bg-pink-700 transition"
+                                >
+                                  {copied === rek.id.toString()
+                                    ? "✅ Disalin"
+                                    : "Salin Nomor"}
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
