@@ -98,9 +98,9 @@ export default function PlatinumTemplate14({ id, data: datas }) {
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem("msgs_v1");
-      return raw ? JSON.parse(raw) : initialMessages;
+      return raw && JSON.parse(raw);
     } catch (e) {
-      return initialMessages;
+      return "";
     }
   });
 

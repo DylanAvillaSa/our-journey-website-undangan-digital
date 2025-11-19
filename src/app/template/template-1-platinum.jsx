@@ -102,9 +102,9 @@ export default function Template1Platinum({ id, data }) {
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem("msgs_v1");
-      return raw ? JSON.parse(raw) : initialMessages;
+      return raw && JSON.parse(raw);
     } catch (e) {
-      return initialMessages;
+      return "";
     }
   });
 
